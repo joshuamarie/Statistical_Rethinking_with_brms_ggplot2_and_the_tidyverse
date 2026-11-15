@@ -22,7 +22,7 @@ jobs:
       - name: Install packages
         run: |
           uvr init --here
-          uvr add --no-install rmarkdown knitr vembedr tidyverse patchwork brms tidybayes purrr ggrepel tigris bayesplot GGally rcartocolor broom posterior ggthemes scales ggmcmc ghibli wesanderson loo ggExtra cran/santoku@master invgamma ggbeeswarm viridis readxl MCMCglmm rmcelreath/rethinking hadley/emo gadenbuie/ggpomological edwinth/dutchmasters
+          uvr add --no-install rmarkdown knitr vembedr tidyverse patchwork brms tidybayes purrr ggrepel tigris bayesplot GGally rcartocolor broom posterior ggthemes scales ggmcmc ghibli wesanderson loo ggExtra cran/santoku@master invgamma ggbeeswarm viridis readxl MCMCglmm rmcelreath/rethinking hadley/emo gadenbuie/ggpomological edwinth/dutchmasters stan-dev/cmdstanr
           uvr sync --install-system-deps
       - name: Render chapter 1
         run: quarto render 01.qmd
