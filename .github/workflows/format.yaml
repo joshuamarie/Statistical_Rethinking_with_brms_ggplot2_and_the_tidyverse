@@ -1,0 +1,21 @@
+name: format
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  check-format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: posit-dev/setup-air@v1
+        with:
+          version: "0.10.0"
+      - name: Check R files
+        run: air format . --check
+      - uses: jolars/panache-action@v1
+        with:
+          panache-version: v3.18.0
+          lint: "false"
