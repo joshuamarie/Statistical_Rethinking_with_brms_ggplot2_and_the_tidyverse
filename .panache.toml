@@ -1,4 +1,7 @@
 flavor = "quarto"
 
+[format]
+wrap = "preserve"
+
 [formatters]
 r = "air"
