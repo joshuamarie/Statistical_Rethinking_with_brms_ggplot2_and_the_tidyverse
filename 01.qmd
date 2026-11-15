@@ -5,7 +5,7 @@
 #| out-width: "20%"
 #| fig-cap: "Rabbi Loew and Golem by Mikoláš Aleš, 1899"
 
-knitr::include_graphics("pictures/Golem_and_Loew.jpg")
+knitr::include_graphics("Pictures/Golem_and_Loew.jpg")
 
 # For the life of me, I couldn't get a hyperlink into this caption.
 # So for you real nerds, it came from here:
