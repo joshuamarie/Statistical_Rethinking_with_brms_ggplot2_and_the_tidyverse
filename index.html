@@ -1,0 +1,1235 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.11.9">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="A. Solomon Kurz">
+<meta name="dcterms.date" content="2026-11-16">
+
+<title>Statistical rethinking with brms, ggplot2, and the tidyverse</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+  margin-bottom: 0em;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<link href="./01.html" rel="next">
+<link href="./mischa_favicon.png" rel="icon" type="image/png">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-5de16f5e46225c21e2daa90d340bf64f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-e38c6f09d09fb5807c02a3ec22ed2b55.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "sidebar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "start",
+  "type": "textbox",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<meta property="og:title" content="Statistical rethinking with brms, ggplot2, and the tidyverse">
+<meta property="og:description" content="version 1.4.0">
+<meta property="og:site_name" content="Statistical rethinking with brms, ggplot2, and the tidyverse">
+</head>
+
+<body class="nav-sidebar floating quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+  <nav class="quarto-secondary-nav" aria-label="Toolbar">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="Breadcrumbs"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">Preface</a></li></ol></nav>
+        <a class="flex-grow-1" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+      <button type="button" class="btn quarto-search-button" aria-label="Search" onclick="window.quartoOpenSearch();">
+        <i class="bi bi-search"></i>
+      </button>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto" aria-label="Site">
+    <div class="pt-lg-2 mt-2 text-left sidebar-header">
+    <div class="sidebar-title mb-0 py-0">
+      <a href="./"><em>Statistical rethinking</em> with brms, ggplot2, and the tidyverse</a> 
+        <div class="sidebar-tools-main">
+    <a href="https://github.com/ASKurz/Statistical_Rethinking_with_brms_ggplot2_and_the_tidyverse" title="Source Code" class="quarto-navigation-tool px-1" aria-label="Source Code"><i class="bi bi-github"></i></a>
+</div>
+    </div>
+      </div>
+        <div class="mt-2 flex-shrink-0 align-items-center">
+        <div class="sidebar-search">
+        <div id="quarto-search" class="" title="Search"></div>
+        </div>
+        </div>
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Preface</span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./01.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Golem of Prague</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./02.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">2</span>&nbsp; <span class="chapter-title">Small Worlds and Large Worlds</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./03.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">3</span>&nbsp; <span class="chapter-title">Sampling the Imaginary</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./04.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">4</span>&nbsp; <span class="chapter-title">Linear Models</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./05.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">5</span>&nbsp; <span class="chapter-title">Multivariate Linear Models</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./06.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">6</span>&nbsp; <span class="chapter-title">Overfitting, Regularization, and Information Criteria</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./07.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">7</span>&nbsp; <span class="chapter-title">Interactions</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./08.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">8</span>&nbsp; <span class="chapter-title">Markov Chain Monte Carlo</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./09.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">9</span>&nbsp; <span class="chapter-title">Big Entropy and the Generalized Linear Model</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./10.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">10</span>&nbsp; <span class="chapter-title">Counting and Classification</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./11.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">11</span>&nbsp; <span class="chapter-title">Monsters and Mixtures</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./12.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">12</span>&nbsp; <span class="chapter-title">Multilevel Models</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./13.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">13</span>&nbsp; <span class="chapter-title">Adventures in Covariance</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./14.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">14</span>&nbsp; <span class="chapter-title">Missing Data and Other Opportunities</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./15.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text"><span class="chapter-number">15</span>&nbsp; <span class="chapter-title"><del>Horoscopes</del> Insights</span></span></a>
+  </div>
+</li>
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./references.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">References</span></a>
+  </div>
+</li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#preface" id="toc-preface" class="nav-link active" data-scroll-target="#preface">Preface</a></li>
+  <li><a href="#this-is-a-love-letter" id="toc-this-is-a-love-letter" class="nav-link" data-scroll-target="#this-is-a-love-letter">This is a love letter</a>
+  <ul>
+  <li><a href="#why-this" id="toc-why-this" class="nav-link" data-scroll-target="#why-this">Why this?</a></li>
+  <li><a href="#my-assumptions-about-you" id="toc-my-assumptions-about-you" class="nav-link" data-scroll-target="#my-assumptions-about-you">My assumptions about you</a></li>
+  <li><a href="#how-to-use-and-understand-this-project" id="toc-how-to-use-and-understand-this-project" class="nav-link" data-scroll-target="#how-to-use-and-understand-this-project">How to use and understand this project</a></li>
+  <li><a href="#r-setup" id="toc-r-setup" class="nav-link" data-scroll-target="#r-setup"><strong>R</strong> setup</a></li>
+  <li><a href="#we-have-updates" id="toc-we-have-updates" class="nav-link" data-scroll-target="#we-have-updates">We have updates</a>
+  <ul>
+  <li><a href="#version-0.9.0" id="toc-version-0.9.0" class="nav-link" data-scroll-target="#version-0.9.0">Version 0.9.0</a></li>
+  <li><a href="#version-1.0.0" id="toc-version-1.0.0" class="nav-link" data-scroll-target="#version-1.0.0">Version 1.0.0</a></li>
+  <li><a href="#version-1.0.1" id="toc-version-1.0.1" class="nav-link" data-scroll-target="#version-1.0.1">Version 1.0.1</a></li>
+  <li><a href="#version-1.1.0" id="toc-version-1.1.0" class="nav-link" data-scroll-target="#version-1.1.0">Version 1.1.0</a></li>
+  <li><a href="#version-1.2.0" id="toc-version-1.2.0" class="nav-link" data-scroll-target="#version-1.2.0">Version 1.2.0</a></li>
+  <li><a href="#version-1.3.0" id="toc-version-1.3.0" class="nav-link" data-scroll-target="#version-1.3.0">Version 1.3.0</a></li>
+  <li><a href="#version-1.4.0" id="toc-version-1.4.0" class="nav-link" data-scroll-target="#version-1.4.0">Version 1.4.0</a></li>
+  </ul></li>
+  <li><a href="#is-this-material-obsolete" id="toc-is-this-material-obsolete" class="nav-link" data-scroll-target="#is-this-material-obsolete">Is this material obsolete?</a></li>
+  <li><a href="#thank-yous-are-in-order" id="toc-thank-yous-are-in-order" class="nav-link" data-scroll-target="#thank-yous-are-in-order">Thank-you’s are in order</a></li>
+  <li><a href="#license-and-citation" id="toc-license-and-citation" class="nav-link" data-scroll-target="#license-and-citation">License and citation</a></li>
+  <li><a href="#comments" id="toc-comments" class="nav-link" data-scroll-target="#comments">Comments</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/ASKurz/Statistical_Rethinking_with_brms_ggplot2_and_the_tidyverse/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content" tabindex="-1">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title"><em>Statistical rethinking</em> with brms, ggplot2, and the tidyverse</h1>
+<p class="subtitle lead">version 1.4.0</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>A. Solomon Kurz </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">November 16, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<section id="preface" class="level1 unnumbered">
+<h1 class="unnumbered">Preface</h1>
+</section>
+<section id="this-is-a-love-letter" class="level1 unnumbered">
+<h1 class="unnumbered">This is a love letter</h1>
+<p>I love McElreath’s <span class="citation" data-cites="mcelreathStatisticalRethinkingBayesian2015">(<a href="references.html#ref-mcelreathStatisticalRethinkingBayesian2015" role="doc-biblioref">2015</a>)</span> <a href="https://xcelab.net/rm/statistical-rethinking/"><em>Statistical rethinking</em> text</a>. It’s the entry-level textbook for applied researchers I spent years looking for. McElreath’s <a href="https://www.youtube.com/channel/UCNJK6_DZvcMqNSzQdEkzvzA/playlists">freely-available lectures</a> on the book are really great, too.</p>
+<p>However, I prefer using Bürkner’s <a href="https://github.com/paul-buerkner/brms">brms package</a> <span class="citation" data-cites="R-brms burknerBrmsPackageBayesian2017 burknerAdvancedBayesianMultilevel2018">(<a href="references.html#ref-burknerBrmsPackageBayesian2017" role="doc-biblioref">Bürkner, 2017</a>, <a href="references.html#ref-burknerAdvancedBayesianMultilevel2018" role="doc-biblioref">2018</a>, <a href="references.html#ref-R-brms" role="doc-biblioref">2022</a>)</span> when doing Bayesian regression in R. <a href="https://statmodeling.stat.columbia.edu/2017/01/10/r-packages-interfacing-stan-brms/">It’s just spectacular</a>. I also prefer plotting with <a href="https://ggplot2.tidyverse.org/">ggplot2</a> <span class="citation" data-cites="wickhamGgplot2ElegantGraphics2016 R-ggplot2">(<a href="references.html#ref-wickhamGgplot2ElegantGraphics2016" role="doc-biblioref">Wickham, 2016</a>; <a href="references.html#ref-R-ggplot2" role="doc-biblioref">Wickham et al., 2022</a>)</span>, and coding with functions and principles from the <a href="https://www.tidyverse.org/">tidyverse</a> <span class="citation" data-cites="R-tidyverse wickhamWelcomeTidyverse2019">(<a href="references.html#ref-wickhamWelcomeTidyverse2019" role="doc-biblioref">Wickham et al., 2019</a>; <a href="references.html#ref-R-tidyverse" role="doc-biblioref">Wickham, 2022</a>)</span>.</p>
+<p>This project is an attempt to reexpress the code in McElreath’s textbook. His models are re-fit with brms, the figures are reproduced or reimagined with ggplot2, and the general data wrangling code now predominantly follows the tidyverse style.</p>
+<p>Are you looking for the companion ebook for McElreath’s 2nd edition? <a href="https://solomon.quarto.pub/sr2/">Click here.</a></p>
+<section id="why-this" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="why-this">Why this?</h2>
+<p>I’m not a statistician and I have no formal background in computer science. Though I benefited from a suite of statistics courses in grad school, a large portion of my training has been outside of the classroom, working with messy real-world data, and searching online for help. One of the great resources I happened on was <a href="https://stats.idre.ucla.edu">idre, the UCLA Institute for Digital Education</a>, which offers an online portfolio of <a href="https://stats.idre.ucla.edu/other/examples/">richly annotated textbook examples</a>. Their online tutorials are among the earliest inspirations for this project. We need more resources like them.</p>
+<p>With that in mind, one of the strengths of McElreath’s text is its thorough integration with the <a href="https://github.com/rmcelreath/rethinking">rethinking package</a> <span class="citation" data-cites="R-rethinking">(<a href="references.html#ref-R-rethinking" role="doc-biblioref">McElreath, 2020a</a>)</span>. The rethinking package is a part of the R ecosystem, which is great because R is free and open source <span class="citation" data-cites="R-base">(<a href="references.html#ref-R-base" role="doc-biblioref">R Core Team, 2022</a>)</span>. McElreath has made the source code for rethinking <a href="https://github.com/rmcelreath/rethinking">publicly available</a>, too. Since he completed his text, <a href="https://www.youtube.com/watch?v=pKZLJPrZLhU&amp;t=29073s&amp;frags=pl%2Cwn">many other packages have been developed</a> to help users of the R ecosystem interface with <a href="https://mc-stan.org/">Stan</a> <span class="citation" data-cites="carpenterStanProbabilisticProgramming2017">(<a href="references.html#ref-carpenterStanProbabilisticProgramming2017" role="doc-biblioref">Carpenter et al., 2017</a>)</span>. Of those alternative packages, I think Bürkner’s <a href="https://github.com/paul-buerkner/brms">brms</a> is the best for general-purpose Bayesian data analysis. Its flexible, uses reasonably-approachable syntax, has sensible defaults, and offers a vast array of post-processing convenience functions. And brms has only gotten <a href="https://github.com/paul-buerkner/brms/blob/master/NEWS.md">better over time</a>. Yet at the time I released the first version of this ebook, there were no textbooks on the market that highlight the brms package, which seemed like an evil worth correcting. Though for a noteworthy new contribution, see <span class="citation" data-cites="nicenboim2022introduction">Nicenboim et al. (<a href="references.html#ref-nicenboim2022introduction" role="doc-biblioref">2022</a>)</span>.</p>
+<p>In addition, McElreath’s data wrangling code is based in the base R style and he made most of his figures with base R plots. Though there are benefits to sticking close to base R functions (e.g., less dependencies leading to a lower likelihood that your code will break in the future), there are downsides. <a href="http://varianceexplained.org/r/teach-tidyverse/">For beginners, base R functions can be difficult both to learn and to read</a>. Happily, in recent years Hadley Wickham and others have been developing a group of packages collectively called the <a href="https://www.tidyverse.org/">tidyverse</a>. These tidyverse packages, such as <a href="https://dplyr.tidyverse.org">dplyr</a> <span class="citation" data-cites="R-dplyr">(<a href="references.html#ref-R-dplyr" role="doc-biblioref">Wickham et al., 2020</a>)</span> and <a href="https://purrr.tidyverse.org">purrr</a> <span class="citation" data-cites="R-purrr">(<a href="references.html#ref-R-purrr" role="doc-biblioref">Henry &amp; Wickham, 2020</a>)</span>, were developed according to an <a href="https://cran.r-project.org/web/packages/tidyverse/vignettes/manifesto.html">underlying philosophy</a> and they are designed to work together coherently and seamlessly. Though <a href="https://github.com/matloff/TidyverseSkeptic">not all</a> within the R community share this opinion, I am among those who think the tidyverse style of coding is generally <a href="http://varianceexplained.org/r/teach-tidyverse/">easier to learn and sufficiently powerful</a> that these packages can accommodate the bulk of your wrangling data needs. I also find tidyverse-style syntax easier to read. And of course, the widely-used <a href="https://ggplot2.tidyverse.org">ggplot2 package</a> is part of the tidyverse, too.</p>
+<p>To be clear, students can get a great education in both Bayesian statistics and programming in R with McElreath’s text just the way it is. Just go slow, work through all the examples, and read the text closely. It’s a pedagogical boon. I could not have done better or even closely so. But what I can offer is a parallel introduction on how to fit the statistical models with the ever-improving and already-quite-impressive brms package. I can throw in examples of how to perform other operations according to the ethic of the tidyverse. And I can also offer glimpses of some of the other great packages in the R + Stan ecosystem, such as <a href="https://github.com/stan-dev/loo">loo</a> <span class="citation" data-cites="R-loo vehtariPracticalBayesianModel2017 yaoUsingStackingAverage2018">(<a href="references.html#ref-vehtariPracticalBayesianModel2017" role="doc-biblioref">Vehtari et al., 2017</a>; <a href="references.html#ref-R-loo" role="doc-biblioref">Vehtari et al., 2022</a>; <a href="references.html#ref-yaoUsingStackingAverage2018" role="doc-biblioref">Yao et al., 2018</a>)</span>, <a href="https://github.com/stan-dev/bayesplot">bayesplot</a> <span class="citation" data-cites="R-bayesplot gabry2019visualization">(<a href="references.html#ref-gabry2019visualization" role="doc-biblioref">Gabry et al., 2019</a>; <a href="references.html#ref-R-bayesplot" role="doc-biblioref">Gabry &amp; Mahr, 2022</a>)</span>, and <a href="https://github.com/mjskay/tidybayes">tidybayes</a> <span class="citation" data-cites="R-tidybayes">(<a href="references.html#ref-R-tidybayes" role="doc-biblioref">Kay, 2022</a>)</span>.</p>
+</section>
+<section id="my-assumptions-about-you" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="my-assumptions-about-you">My assumptions about you</h2>
+<p>If you’re looking at this project, I’m guessing you’re either a graduate student, a post-graduate academic or a researcher of some sort, which suggests you have at least a 101-level foundation in statistics. If you’re rusty, consider checking out the free text books by <a href="https://bookdown.org/roback/bookdown-bysh/">Legler and Roback</a> <span class="citation" data-cites="leglerBroadeningYourStatistical2019">(<a href="references.html#ref-leglerBroadeningYourStatistical2019" role="doc-biblioref">2019</a>)</span> or <a href="https://learningstatisticswithr.com/">Navarro</a> <span class="citation" data-cites="navarroLearningStatistics2019">(<a href="references.html#ref-navarroLearningStatistics2019" role="doc-biblioref">2019</a>)</span> before diving into <em>Statistical rethinking</em>. I’m also assuming you understand the rudiments of R and have at least a vague idea about what the tidyverse is. If you’re totally new to R, consider starting with Peng’s <span class="citation" data-cites="pengProgrammingDataScience2022">(<a href="references.html#ref-pengProgrammingDataScience2022" role="doc-biblioref">2022</a>)</span> <a href="https://bookdown.org/rdpeng/rprogdatascience/"><em>R programming for data science</em></a>. For an introduction to the tidyvese-style of data analysis, the best source I’ve found is Grolemund and Wickham’s <span class="citation" data-cites="grolemundDataScience2017">(<a href="references.html#ref-grolemundDataScience2017" role="doc-biblioref">2017</a>)</span> <a href="http://r4ds.had.co.nz"><em>R for data science</em></a> (<em>R4DS</em>), which I extensively link to throughout this project.</p>
+<p>That said, you do not need to be totally fluent in statistics or R. Otherwise why would you need this project, anyway? IMO, the most important things are curiosity, a willingness to try, and persistent tinkering. I love this stuff. Hopefully you will, too.</p>
+</section>
+<section id="how-to-use-and-understand-this-project" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="how-to-use-and-understand-this-project">How to use and understand this project</h2>
+<p>This project is not meant to stand alone. It’s a supplement to the first edition of McElreath’s text. I follow the structure of his text, chapter by chapter, translating his analyses into brms and tidyverse code. However, some of the sections in the text are composed entirely of equations and prose, leaving us nothing to translate. When we run into those sections, the corresponding sections in this project will sometimes be blank or omitted, though I do highlight some of the important points in quotes and prose of my own. So I imagine students might reference this project as they progress through McElreath’s text. I also imagine working data analysts might use this project in conjunction with the text as they flip to the specific sections that seem relevant to solving their data challenges.</p>
+<p>I reproduce the bulk of the figures in the text, too. The plots in the first few chapters are the closest to those in the text. However, I’m passionate about data visualization and like to play around with <a href="https://github.com/EmilHvitfeldt/r-color-palettes">color palettes</a>, formatting templates, and other conventions quite a bit. As a result, the plots in each chapter have their own look and feel. For more on some of these topics, check out chapters <a href="https://r4ds.had.co.nz/data-visualisation.html">3</a>, <a href="https://r4ds.had.co.nz/exploratory-data-analysis.html">7</a>, and <a href="https://r4ds.had.co.nz/graphics-for-communication.html">28</a> in <em>R4DS</em>, Healy’s <span class="citation" data-cites="healyDataVisualization2018">(<a href="references.html#ref-healyDataVisualization2018" role="doc-biblioref">2018</a>)</span> <a href="https://socviz.co"><em>Data visualization: A practical introduction</em></a>, Wilke’s <span class="citation" data-cites="wilkeFundamentalsDataVisualization2019">(<a href="references.html#ref-wilkeFundamentalsDataVisualization2019" role="doc-biblioref">2019</a>)</span> <a href="https://serialmentor.com/dataviz/"><em>Fundamentals of data visualization</em></a> or Wickham’s <span class="citation" data-cites="wickhamGgplot2ElegantGraphics2016">(<a href="references.html#ref-wickhamGgplot2ElegantGraphics2016" role="doc-biblioref">2016</a>)</span> <a href="https://ggplot2-book.org/"><em>ggplot2: Elegant graphics for data analysis</em></a>.</p>
+<p>In this project, I use a handful of formatting conventions gleaned from <a href="https://r4ds.had.co.nz/introduction.html#running-r-code"><em>R4DS</em></a>, <a href="https://style.tidyverse.org/"><em>The tidyverse style guide</em></a> <span class="citation" data-cites="wickhamTidyverseStyleGuide2020">(<a href="references.html#ref-wickhamTidyverseStyleGuide2020" role="doc-biblioref">Wickham, 2020</a>)</span>, and <a href="https://bookdown.org/yihui/rmarkdown/software-info.html"><em>R markdown: The definitive guide</em></a> <span class="citation" data-cites="xieMarkdownDefinitiveGuide2020">(<a href="references.html#ref-xieMarkdownDefinitiveGuide2020" role="doc-biblioref">Xie et al., 2020</a>)</span>.</p>
+<ul>
+<li>R code blocks and their output appear in a gray background. E.g.,</li>
+</ul>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dv">2</span> <span class="sc">+</span> <span class="dv">2</span> <span class="sc">==</span> <span class="dv">5</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] FALSE</code></pre>
+</div>
+</div>
+<ul>
+<li>Functions are in a typewriter font and followed by parentheses, all atop a gray background (e.g., <code>brm()</code>).</li>
+<li>When I want to make explicit the package a given function comes from, I insert the double-colon operator <code>::</code> between the package name and the function (e.g., <code>tidybayes::mode_hdi()</code>).</li>
+<li>R objects, such as data or function arguments, are in typewriter font atop gray backgrounds (e.g., <code>chimpanzees</code>, <code>.width = .5</code>).</li>
+<li>You can detect hyperlinks by their typical <a href="https://www.youtube.com/watch?v=40o0_0XTB6E&amp;t=15s&amp;frags=pl%2Cwn">blue-colored font</a>.</li>
+<li>In the text, McElreath indexed his models with names like <code>m4.1</code> (i.e., the first model of Chapter 4). I primarily followed that convention, but replaced the <code>m</code> with a <code>b</code> to stand for the brms package.</li>
+</ul>
+</section>
+<section id="r-setup" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="r-setup"><strong>R</strong> setup</h2>
+<p>To get the full benefit from this ebook, you’ll need some software. Happily, everything will be free (provided you have access to a decent personal computer and an good internet connection).</p>
+<p>First, you’ll need to install <strong>R</strong>, which you can learn about at <a href="https://cran.r-project.org/">https://cran.r-project.org/</a>.</p>
+<p>Though not necessary, your <strong>R</strong> experience might be more enjoyable if done through the free RStudio interface, which you can learn about at <a href="https://posit.co/products/open-source/rstudio/">https://posit.co/products/open-source/rstudio/</a>.</p>
+<p>Once you have installed <strong>R</strong>, execute the following to install the bulk of the add-on packages. This will probably take a few minutes to finish. Go make yourself a coffee.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>packages <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"bayesplot"</span>,</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"brms"</span>,</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"broom"</span>,</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"devtools"</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"GGally"</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggbeeswarm"</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggExtra"</span>,</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggmcmc"</span>,</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggrepel"</span>,</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggthemes"</span>,</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ghibli"</span>,</span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  <span class="st">"invgamma"</span>,</span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>  <span class="st">"loo"</span>,</span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>  <span class="st">"patchwork"</span>,</span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">"posterior"</span>,</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">"rcartocolor"</span>,</span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>  <span class="st">"tidybayes"</span>,</span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a>  <span class="st">"tidyverse"</span>,</span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a>  <span class="st">"tigris"</span>,</span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a>  <span class="st">"viridis"</span>,</span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a>  <span class="st">"wesanderson"</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(packages, <span class="at">dependencies =</span> T)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>A few of the other packages are not officially available via the Comprehensive R Archive Network (CRAN; https://cran.r-project.org/). You can download them directly from GitHub by executing the following.</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"stan-dev/cmdstanr"</span>)</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"EdwinTh/dutchmasters"</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"gadenbuie/ggpomological"</span>)</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>devtools<span class="sc">::</span><span class="fu">install_github</span>(<span class="st">"rmcelreath/rethinking"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<p>It’s possible you’ll have problems installing some of these packages. Here are some likely suspects and where you can find help:</p>
+<ul>
+<li>for difficulties installing <strong>brms</strong>, go to <a href="https://github.com/paul-buerkner/brms#how-do-i-install-brms">https://github.com/paul-buerkner/brms#how-do-i-install-brms</a> or search around in the <a href="https://discourse.mc-stan.org/c/interfaces/brms/36"><strong>brms</strong> section of the Stan forums</a>;</li>
+<li>for difficulties installing <strong>cmdstanr</strong>, go to <a href="https://mc-stan.org/cmdstanr/articles/cmdstanr.html">https://mc-stan.org/cmdstanr/articles/cmdstanr.html</a>; and</li>
+<li>for difficulties installing <strong>rethinking</strong>, go to <a href="https://github.com/rmcelreath/rethinking#installation">https://github.com/rmcelreath/rethinking#installation</a>.</li>
+</ul>
+</section>
+<section id="we-have-updates" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="we-have-updates">We have updates</h2>
+<p>For a brief rundown of the version history, we have:</p>
+<section id="version-0.9.0" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="version-0.9.0">Version 0.9.0</h3>
+<p>I released the initial 0.9.0 version of this project in September 26, 2018. It was a full first draft and set the stage for all others.</p>
+</section>
+<section id="version-1.0.0" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="version-1.0.0">Version 1.0.0</h3>
+<p>In April 19, 2019 came the 1.0.0 version. Some of the major changes were:</p>
+<ul>
+<li>All models were refit with brms, 2.8.0.</li>
+<li>Adopting the <code>seed</code> argument within the <code>brm()</code> function made the model results more reproducible.</li>
+<li>The <a href="https://github.com/stan-dev/loo">loo package</a> was updated. As a consequence, our workflow for the WAIC and LOO changed, too.</li>
+<li>I improved the brms alternative to McElreath’s <code>coeftab()</code> function.</li>
+<li>I made better use of the tidyverse, especially some of the <a href="https://purrr.tidyverse.org/">purrr</a> functions.</li>
+<li>Particularly in the later chapters, there’s a greater emphasis on functions from the <a href="https://mjskay.github.io/tidybayes/">tidybayes package</a>.</li>
+<li><a href="11.html#sec-Beta-binomial" class="quarto-xref"><span>Beta-binomial</span></a> contains the updated brms 2.8.0 workflow for making custom distributions, using the beta-binomial model as the example.</li>
+<li>Chapter 12 received a new bonus <a href="12.html#sec-Put-your-random-effects-to-work" class="quarto-xref"><span>Summary Bonus: Put your random effects to work</span></a> contrasting different methods for working with multilevel posteriors.</li>
+<li>Chapter 14 received a new bonus <a href="14.html#sec-Meta-analysis" class="quarto-xref"><span>Summary Bonus: Meta-analysis</span></a> introducing Bayesian meta-analysis and linking it to multilevel and measurement-error models.</li>
+<li>With the help of others within the community, I corrected many typos and streamlined some of the code (e.g., <a href="https://github.com/ASKurz/Statistical_Rethinking_with_brms_ggplot2_and_the_tidyverse/issues/21">dropped an unnecessary use of the <code>mi()</code> function in Section 14.2.1</a>)</li>
+<li>And in some cases, I corrected sections that were just plain wrong (e.g., some of my initial attempts in section 3.3 were incorrect).</li>
+</ul>
+</section>
+<section id="version-1.0.1" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="version-1.0.1">Version 1.0.1</h3>
+<p>In May 5, 2019 came the 1.0.1 version, which finally added a <a href="https://github.com/ASKurz/Statistical_Rethinking_with_brms_ggplot2_and_the_tidyverse/blob/master/recoding_Statistical_Rethinking_1.0.1_PDF_version.pdf">PDF version</a> of the book. Other noteworthy changes included:</p>
+<ul>
+<li>major revisions to the LaTeX syntax underlying many of the in-text equations (e.g., dropping the “eqnarray” environment for “align*“),</li>
+<li>adjusting some of the image syntax, and</li>
+<li>Updating the reference for the Bayesian <span class="math inline">\(R^2\)</span> <span class="citation" data-cites="gelmanRsquaredBayesianRegression2019">(<a href="references.html#ref-gelmanRsquaredBayesianRegression2019" role="doc-biblioref">Gelman et al., 2019</a>)</span>.</li>
+</ul>
+</section>
+<section id="version-1.1.0" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="version-1.1.0">Version 1.1.0</h3>
+<p>In March 1, 2020 came the 1.1.0 version. Noteworthy changes were:</p>
+<ul>
+<li>substantial expansions to <a href="10.html#sec-Multinomial" class="quarto-xref"><span>Multinomial</span></a> and <a href="11.html#sec-Negative-binomial-or-gamma-Poisson" class="quarto-xref"><span>Negative-binomial or gamma-Poisson</span></a>,</li>
+<li>the addition of a new section in Chapter 15 (<a href="15.html#sec-Code-in-public" class="quarto-xref"><span>Code in public</span></a>) encouraging others to code in public,</li>
+<li>refitting all models with the current official version of brms, version 2.12.0,</li>
+<li>discussions (<a href="08.html#sec-Estimation" class="quarto-xref"><span>Estimation</span></a>) on the new <code>Bulk_ESS</code> and <code>Tail_ESS</code> summaries of HMC effective sample size <span class="citation" data-cites="vehtariRanknormalizationFoldingLocalization2021">(<a href="references.html#ref-vehtariRanknormalizationFoldingLocalization2021" role="doc-biblioref">Vehtari et al., 2021</a>)</span>,</li>
+<li>saving all fits as external files in the new <a href="https://github.com/ASKurz/Statistical_Rethinking_with_brms_ggplot2_and_the_tidyverse/tree/master/fits">GitHub fits folder</a>, primarily with the <code>file</code> argument,</li>
+<li>extensive use of the <a href="https://patchwork.data-imaginist.com/">patchwork package</a> <span class="citation" data-cites="R-patchwork">(<a href="references.html#ref-R-patchwork" role="doc-biblioref">Pedersen, 2022</a>)</span> for combining ggplots,</li>
+<li>improving/updating some of the tidyverse code (e.g., using <code>tidyr::crossing()</code>),</li>
+<li>updates to the <code>brms::custom_family()</code>-related code in <a href="11.html#sec-Beta-binomial" class="quarto-xref"><span>Beta-binomial</span></a> to match brms 2.11.0 updates,</li>
+<li>replacing the depreciated <code>brms::marginal_effects()</code> with <code>brms::conditional_effects()</code> (see <a href="https://github.com/paul-buerkner/brms/issues/735">issue #735</a>),</li>
+<li>replacing the depreciated <code>brms::stanplot()</code> with <code>brms::mcmc_plot()</code>, and</li>
+<li>increased the plot resolution with <code>fig.retina = 2.5</code>.</li>
+</ul>
+</section>
+<section id="version-1.2.0" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="version-1.2.0">Version 1.2.0</h3>
+<p>I released the 1.2.0 version in October 11, 2020. Noteworthy changes included:</p>
+<ul>
+<li>the correct solution to the first multinomial model in <a href="10.html#sec-Explicit-multinomial-models" class="quarto-xref"><span>Explicit multinomial models</span></a>;</li>
+<li>a coherent workflow for the Gaussian process model from <a href="13.html#sec-Spatial-autocorrelation" class="quarto-xref"><span>Example: Spatial autocorrelation in Oceanic tools</span></a>;</li>
+<li>corrections to some of the post-processing workflows for the measurement-error models in <a href="14.html#sec-Measurement-error" class="quarto-xref"><span>Measurement error</span></a>;</li>
+<li>refitting all models with the current official version of brms, version 2.13.5; and</li>
+<li>improved in-text citations and reference sections using <a href="http://www.bibtex.org/">BibTex</a> <span class="citation" data-cites="BibTeX2020">(<a href="references.html#ref-BibTeX2020" role="doc-biblioref"><em><span>BibTeX</span></em>, 2020</a>)</span>, <a href="https://github.com/retorquere/zotero-better-bibtex">Better BibTeX</a> <span class="citation" data-cites="BetterBibTeXZotero2020">(<a href="references.html#ref-BetterBibTeXZotero2020" role="doc-biblioref">Heyns, 2020</a>)</span>, and <a href="https://www.zotero.org/">zotero</a> <span class="citation" data-cites="ZoteroYourPersonal2020">(<a href="references.html#ref-ZoteroYourPersonal2020" role="doc-biblioref">Roy Rosenzweig Center for History and New Media, 2020</a>)</span>.</li>
+</ul>
+</section>
+<section id="version-1.3.0" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="version-1.3.0">Version 1.3.0</h3>
+<p>I released the 1.3.0 version in January 25, 2023. Noteworthy changes included:</p>
+<ul>
+<li>replacing my incorrect use of <code>tidyr::expand()</code> with a more appropriate <code>tidyr::expand_grid()</code> workflow, thanks to insights from <a href="https://github.com/dipetkov">Desislava Petkova</a>;</li>
+<li>adopting the new <code>linewidth</code> argument for several <strong>ggplot2</strong> geoms (see <a href="https://www.tidyverse.org/blog/2022/08/ggplot2-3-4-0-size-to-linewidth/">here</a>);</li>
+<li>refitting all models with the current official version of brms (2.18.0); and</li>
+<li>minor prose, hyperlink, and code edits throughout.</li>
+</ul>
+</section>
+<section id="version-1.4.0" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="version-1.4.0">Version 1.4.0</h3>
+<p>Welcome to version 1.4.0! Noteworthy changes include:</p>
+<ul>
+<li>switching to a <a href="https://quarto.org/docs/books/">Quarto ebook</a> format;</li>
+<li>adding comments sections (e.g., <a href="https://solomon.quarto.pub/sr/02.html#comments">here</a>) via <a href="https://giscus.app/">giscus</a>;</li>
+<li>updating all <strong>brms</strong> model fits with version 2.23.0; and</li>
+<li>a few other minor prose and code edits throughout.</li>
+</ul>
+</section>
+</section>
+<section id="is-this-material-obsolete" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="is-this-material-obsolete">Is this material obsolete?</h2>
+<p>The first edition of McElreath’s text now has a successor, <em>Statistical rethinking: A Bayesian course with examples in R and Stan: Second Edition</em> <span class="citation" data-cites="mcelreathStatisticalRethinkingBayesian2020">(<a href="references.html#ref-mcelreathStatisticalRethinkingBayesian2020" role="doc-biblioref">McElreath, 2020b</a>)</span>. Though the second edition kept a lot of the content from the first, it is a substantial revision and expansion. The book is longer and wildly ambitious in its scope. To be blunt, I believe McElreath moved to quickly in his revision and I suspect many applied readers might need to reference the first edition from time to time to time just to keep up with the content of the second. If McElreath ever releases a third edition, I hope he finds a happy compromise between the first two. So in the meantime, I believe there’s a place for both first and second editions of his text. Accordingly, I believe this ebook should not be considered outdated relative to my <a href="https://solomon.quarto.pub/sr2/">ebook</a> translation of the second edition <span class="citation" data-cites="kurzStatisticalRethinkingSecondEd2026">(<a href="references.html#ref-kurzStatisticalRethinkingSecondEd2026" role="doc-biblioref">Kurz, 2026</a>)</span>. Use whatever you find helpful.</p>
+</section>
+<section id="thank-yous-are-in-order" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="thank-yous-are-in-order">Thank-you’s are in order</h2>
+<p>Before we move on, I’d like to thank the following for their helpful contributions:</p>
+<ul>
+<li>Shaan Amin (<a href="https://github.com/Shaan-Amin">@Shaan-Amin</a>),</li>
+<li>Louis Bliard (<a href="https://github.com/lbiard">@lbiard</a>),</li>
+<li>Paul-Christian Bürkner (<a href="https://github.com/paul-buerkner">@paul-buerkner</a>),</li>
+<li>Joseph V. Casillas (<a href="https://github.com/jvcasillas">@jvcasillas</a>),</li>
+<li>Andrew Collier (<a href="https://github.com/datawookie">@datawookie</a>),</li>
+<li>Marco Colombo (<a href="https://github.com/mcol">@mcol</a>),</li>
+<li>Jeff Hammerbacher (<a href="https://github.com/hammer">@hammer</a>),</li>
+<li>Matthew Kay (<a href="https://github.com/mjskay">@mjskay</a>),</li>
+<li>Katrin Leinweber (<a href="https://github.com/katrinleinweber">@katrinleinweber</a>),</li>
+<li>TJ Mahr (<a href="https://github.com/tjmahr">@tjmahr</a>),</li>
+<li>Federico Marini (<a href="https://github.com/federicomarini">@federicomarini</a>),</li>
+<li>Stijn Masschelein (<a href="https://github.com/stijnmasschelein">@stijnmasschelein</a>),</li>
+<li>JungSu Oh (<a href="https://github.com/js-oh">@js-oh</a>),</li>
+<li>Desislava Petkova (<a href="https://github.com/dipetkov">@dipetkov</a>)</li>
+<li>Colin Quirk (<a href="https://github.com/colinquirk">@colinquirk</a>),</li>
+<li>Rishi Sadhir (<a href="https://github.com/RishiSadhir">@RishiSadhir</a>),</li>
+<li>Jon Spring (<a href="https://github.com/jonspring">@jonspring</a>),</li>
+<li>Phil Straforelli (<a href="https://github.com/pstraforelli">@pstraforelli</a>),</li>
+<li>Richard Torkar (<a href="https://github.com/torkar">@torkar</a>),</li>
+<li>Aki Vehtari (<a href="https://github.com/avehtari">@avehtari</a>), and</li>
+<li>Matti Vuorre (<a href="https://github.com/mvuorre">@mvuorre</a>).</li>
+</ul>
+</section>
+<section id="license-and-citation" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="license-and-citation">License and citation</h2>
+<p>This book is licensed under the GNU General Public License v3.0. You can learn the details, <a href="https://github.com/ASKurz/Statistical_Rethinking_with_brms_ggplot2_and_the_tidyverse_2_ed/blob/master/LICENSE">here</a>. In short, you can use my work. Just make sure you give me the appropriate credit the same way you would for any other scholarly resource. Here’s the citation information:</p>
+<div class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="sc">@</span>book{kurzStatisticalRethinking2026,</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  title <span class="ot">=</span> {Statistical rethinking with brms, ggplot2, and the tidyverse},</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  author <span class="ot">=</span> {Kurz, A. Solomon},</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  year <span class="ot">=</span> {<span class="dv">2026</span>},</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>  month <span class="ot">=</span> {jan},</span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  edition <span class="ot">=</span> {version <span class="dv">1</span>.<span class="fl">4.0</span>},</span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  url <span class="ot">=</span> {https<span class="sc">:</span><span class="er">//</span>solomon.quarto.pub<span class="sc">/</span>sr<span class="sc">/</span>}</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+</section>
+<section id="comments" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="comments">Comments</h2>
+
+
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" data-line-spacing="2" role="list" style="display: none">
+<div id="ref-BibTeX2020" class="csl-entry" role="listitem">
+<em><span>BibTeX</span></em>. (2020). <a href="http://www.bibtex.org/">http://www.bibtex.org/</a>
+</div>
+<div id="ref-burknerBrmsPackageBayesian2017" class="csl-entry" role="listitem">
+Bürkner, P.-C. (2017). <span class="nocase">brms</span>: <span>An R</span> package for <span>Bayesian</span> multilevel models using <span>Stan</span>. <em>Journal of Statistical Software</em>, <em>80</em>(1), 1–28. <a href="https://doi.org/10.18637/jss.v080.i01">https://doi.org/10.18637/jss.v080.i01</a>
+</div>
+<div id="ref-burknerAdvancedBayesianMultilevel2018" class="csl-entry" role="listitem">
+Bürkner, P.-C. (2018). Advanced <span>Bayesian</span> multilevel modeling with the <span>R</span> package brms. <em>The R Journal</em>, <em>10</em>(1), 395–411. <a href="https://doi.org/10.32614/RJ-2018-017">https://doi.org/10.32614/RJ-2018-017</a>
+</div>
+<div id="ref-R-brms" class="csl-entry" role="listitem">
+Bürkner, P.-C. (2022). <em><span class="nocase">brms</span>: <span>Bayesian</span> regression models using ’<span>Stan</span>’</em>. <a href="https://CRAN.R-project.org/package=brms">https://CRAN.R-project.org/package=brms</a>
+</div>
+<div id="ref-carpenterStanProbabilisticProgramming2017" class="csl-entry" role="listitem">
+Carpenter, B., Gelman, A., Hoffman, M. D., Lee, D., Goodrich, B., Betancourt, M., Brubaker, M., Guo, J., Li, P., &amp; Riddell, A. (2017). Stan: <span>A</span> probabilistic programming language. <em>Journal of Statistical Software</em>, <em>76</em>(1). <a href="https://doi.org/10.18637/jss.v076.i01">https://doi.org/10.18637/jss.v076.i01</a>
+</div>
+<div id="ref-R-bayesplot" class="csl-entry" role="listitem">
+Gabry, J., &amp; Mahr, T. (2022). <em><span class="nocase">bayesplot</span>: <span>Plotting</span> for <span>Bayesian</span> models</em>. <a href="https://CRAN.R-project.org/package=bayesplot">https://CRAN.R-project.org/package=bayesplot</a>
+</div>
+<div id="ref-gabry2019visualization" class="csl-entry" role="listitem">
+Gabry, J., Simpson, D., Vehtari, A., Betancourt, M., &amp; Gelman, A. (2019). Visualization in <span>Bayesian</span> workflow. <em>Journal of the Royal Statistical Society: Series A (Statistics in Society)</em>, <em>182</em>(2), 389–402. <a href="https://doi.org/10.1111/rssa.12378">https://doi.org/10.1111/rssa.12378</a>
+</div>
+<div id="ref-gelmanRsquaredBayesianRegression2019" class="csl-entry" role="listitem">
+Gelman, A., Goodrich, B., Gabry, J., &amp; Vehtari, A. (2019). R-squared for <span>Bayesian</span> regression models. <em>The American Statistician</em>, <em>73</em>(3), 307–309. <a href="https://doi.org/10.1080/00031305.2018.1549100">https://doi.org/10.1080/00031305.2018.1549100</a>
+</div>
+<div id="ref-grolemundDataScience2017" class="csl-entry" role="listitem">
+Grolemund, G., &amp; Wickham, H. (2017). <em>R for data science</em>. O’Reilly. <a href="https://r4ds.had.co.nz">https://r4ds.had.co.nz</a>
+</div>
+<div id="ref-healyDataVisualization2018" class="csl-entry" role="listitem">
+Healy, K. (2018). <em>Data visualization: <span>A</span> practical introduction</em>. Princeton University Press. <a href="https://socviz.co/">https://socviz.co/</a>
+</div>
+<div id="ref-R-purrr" class="csl-entry" role="listitem">
+Henry, L., &amp; Wickham, H. (2020). <em><span class="nocase">purrr</span>: <span>Functional</span> programming tools</em>. <a href="https://CRAN.R-project.org/package=purrr">https://CRAN.R-project.org/package=purrr</a>
+</div>
+<div id="ref-BetterBibTeXZotero2020" class="csl-entry" role="listitem">
+Heyns, E. (2020). <em>Better <span>BibTeX</span> for zotero</em>. <a href="https://retorque.re/zotero-better-bibtex/">https://retorque.re/zotero-better-bibtex/</a>
+</div>
+<div id="ref-R-tidybayes" class="csl-entry" role="listitem">
+Kay, M. (2022). <em><span class="nocase">tidybayes</span>: <span>Tidy</span> data and ’geoms’ for <span>Bayesian</span> models</em>. <a href="https://CRAN.R-project.org/package=tidybayes">https://CRAN.R-project.org/package=tidybayes</a>
+</div>
+<div id="ref-kurzStatisticalRethinkingSecondEd2026" class="csl-entry" role="listitem">
+Kurz, A. S. (2026). <em>Statistical rethinking 2 with brms and the tidyverse</em> (version 0.5.0). <a href="https://solomon.quarto.pub/sr2/">https://solomon.quarto.pub/sr2/</a>
+</div>
+<div id="ref-leglerBroadeningYourStatistical2019" class="csl-entry" role="listitem">
+Legler, J., &amp; Roback, P. (2019). <em>Broadening your statistical horizons: <span>Generalized</span> linear models and multilevel models</em>. <a href="https://bookdown.org/roback/bookdown-bysh/">https://bookdown.org/roback/bookdown-bysh/</a>
+</div>
+<div id="ref-mcelreathStatisticalRethinkingBayesian2015" class="csl-entry" role="listitem">
+McElreath, R. (2015). <em>Statistical rethinking: <span>A Bayesian</span> course with examples in <span>R</span> and <span>Stan</span></em>. CRC press. <a href="https://xcelab.net/rm/statistical-rethinking/">https://xcelab.net/rm/statistical-rethinking/</a>
+</div>
+<div id="ref-R-rethinking" class="csl-entry" role="listitem">
+McElreath, R. (2020a). <em><span class="nocase">rethinking</span> <span>R</span> package</em>. <a href="https://xcelab.net/rm/software/">https://xcelab.net/rm/software/</a>
+</div>
+<div id="ref-mcelreathStatisticalRethinkingBayesian2020" class="csl-entry" role="listitem">
+McElreath, R. (2020b). <em>Statistical rethinking: <span>A Bayesian</span> course with examples in <span>R</span> and <span>Stan</span></em> (Second Edition). CRC Press. <a href="https://xcelab.net/rm/statistical-rethinking/">https://xcelab.net/rm/statistical-rethinking/</a>
+</div>
+<div id="ref-navarroLearningStatistics2019" class="csl-entry" role="listitem">
+Navarro, D. (2019). <em>Learning statistics with <span>R</span></em>. <a href="https://learningstatisticswithr.com">https://learningstatisticswithr.com</a>
+</div>
+<div id="ref-nicenboim2022introduction" class="csl-entry" role="listitem">
+Nicenboim, B., Schad, D., &amp; Vasishth, S. (2022). <em>An introduction to <span>Bayesian</span> data analysis for cognitive science</em>. <a href="https://vasishth.github.io/bayescogsci/book/">https://vasishth.github.io/bayescogsci/book/</a>
+</div>
+<div id="ref-R-patchwork" class="csl-entry" role="listitem">
+Pedersen, T. L. (2022). <em><span class="nocase">patchwork</span>: <span>The</span> composer of plots</em>. <a href="https://CRAN.R-project.org/package=patchwork">https://CRAN.R-project.org/package=patchwork</a>
+</div>
+<div id="ref-pengProgrammingDataScience2022" class="csl-entry" role="listitem">
+Peng, R. D. (2022). <em>R programming for data science</em>. <a href="https://bookdown.org/rdpeng/rprogdatascience/">https://bookdown.org/rdpeng/rprogdatascience/</a>
+</div>
+<div id="ref-R-base" class="csl-entry" role="listitem">
+R Core Team. (2022). <em>R: <span>A</span> language and environment for statistical computing</em>. R Foundation for Statistical Computing. <a href="https://www.R-project.org/">https://www.R-project.org/</a>
+</div>
+<div id="ref-ZoteroYourPersonal2020" class="csl-entry" role="listitem">
+Roy Rosenzweig Center for History and New Media. (2020). <em>Zotero</em>. <a href="https://www.zotero.org/">https://www.zotero.org/</a>
+</div>
+<div id="ref-R-loo" class="csl-entry" role="listitem">
+Vehtari, A., Gabry, J., Magnusson, M., Yao, Y., &amp; Gelman, A. (2022). <em><span class="nocase">loo</span>: <span>Efficient</span> leave-one-out cross-validation and <span>WAIC</span> for bayesian models</em>. <a href="https://CRAN.R-project.org/package=loo/">https://CRAN.R-project.org/package=loo/</a>
+</div>
+<div id="ref-vehtariPracticalBayesianModel2017" class="csl-entry" role="listitem">
+Vehtari, A., Gelman, A., &amp; Gabry, J. (2017). Practical <span>Bayesian</span> model evaluation using leave-one-out cross-validation and <span>WAIC</span>. <em>Statistics and Computing</em>, <em>27</em>(5), 1413–1432. <a href="https://doi.org/10.1007/s11222-016-9696-4">https://doi.org/10.1007/s11222-016-9696-4</a>
+</div>
+<div id="ref-vehtariRanknormalizationFoldingLocalization2021" class="csl-entry" role="listitem">
+Vehtari, A., Gelman, A., Simpson, D., Carpenter, B., &amp; Bürkner, P.-C. (2021). Rank-normalization, folding, and localization: <span>An</span> improved for assessing convergence of <span>MCMC</span> (with <span>Discussion</span>). <em>Bayesian Analysis</em>, <em>16</em>(2), 667–718. <a href="https://doi.org/10.1214/20-BA1221">https://doi.org/10.1214/20-BA1221</a>
+</div>
+<div id="ref-wickhamGgplot2ElegantGraphics2016" class="csl-entry" role="listitem">
+Wickham, H. (2016). <em><span class="nocase">ggplot2</span>: <span>Elegant</span> graphics for data analysis</em>. Springer-Verlag New York. <a href="https://ggplot2-book.org/">https://ggplot2-book.org/</a>
+</div>
+<div id="ref-wickhamTidyverseStyleGuide2020" class="csl-entry" role="listitem">
+Wickham, H. (2020). <em>The tidyverse style guide</em>. <a href="https://style.tidyverse.org/">https://style.tidyverse.org/</a>
+</div>
+<div id="ref-R-tidyverse" class="csl-entry" role="listitem">
+Wickham, H. (2022). <em><span class="nocase">tidyverse</span>: <span>Easily</span> install and load the ’tidyverse’</em>. <a href="https://CRAN.R-project.org/package=tidyverse">https://CRAN.R-project.org/package=tidyverse</a>
+</div>
+<div id="ref-wickhamWelcomeTidyverse2019" class="csl-entry" role="listitem">
+Wickham, H., Averick, M., Bryan, J., Chang, W., McGowan, L. D., François, R., Grolemund, G., Hayes, A., Henry, L., Hester, J., Kuhn, M., Pedersen, T. L., Miller, E., Bache, S. M., Müller, K., Ooms, J., Robinson, D., Seidel, D. P., Spinu, V., … Yutani, H. (2019). Welcome to the tidyverse. <em>Journal of Open Source Software</em>, <em>4</em>(43), 1686. <a href="https://doi.org/10.21105/joss.01686">https://doi.org/10.21105/joss.01686</a>
+</div>
+<div id="ref-R-ggplot2" class="csl-entry" role="listitem">
+Wickham, H., Chang, W., Henry, L., Pedersen, T. L., Takahashi, K., Wilke, C., Woo, K., Yutani, H., &amp; Dunnington, D. (2022). <em><span class="nocase">ggplot2</span>: <span>Create</span> elegant data visualisations using the grammar of graphics</em>. <a href="https://CRAN.R-project.org/package=ggplot2">https://CRAN.R-project.org/package=ggplot2</a>
+</div>
+<div id="ref-R-dplyr" class="csl-entry" role="listitem">
+Wickham, H., François, R., Henry, L., &amp; Müller, K. (2020). <em><span class="nocase">dplyr</span>: <span>A</span> grammar of data manipulation</em>. <a href="https://CRAN.R-project.org/package=dplyr">https://CRAN.R-project.org/package=dplyr</a>
+</div>
+<div id="ref-wilkeFundamentalsDataVisualization2019" class="csl-entry" role="listitem">
+Wilke, C. O. (2019). <em>Fundamentals of data visualization</em>. <a href="https://clauswilke.com/dataviz/">https://clauswilke.com/dataviz/</a>
+</div>
+<div id="ref-xieMarkdownDefinitiveGuide2020" class="csl-entry" role="listitem">
+Xie, Y., Allaire, J. J., &amp; Grolemund, G. (2020). <em>R markdown: <span>The</span> definitive guide</em>. <span>Chapman and Hall/CRC</span>. <a href="https://bookdown.org/yihui/rmarkdown/">https://bookdown.org/yihui/rmarkdown/</a>
+</div>
+<div id="ref-yaoUsingStackingAverage2018" class="csl-entry" role="listitem">
+Yao, Y., Vehtari, A., Simpson, D., &amp; Gelman, A. (2018). Using stacking to average <span>Bayesian</span> predictive distributions (with discussion). <em>Bayesian Analysis</em>, <em>13</em>(3), 917–1007. <a href="https://doi.org/10.1214/17-BA1091">https://doi.org/10.1214/17-BA1091</a>
+</div>
+</div>
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/solomon\.quarto\.pub\/sr\/");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+      window.quartoDecorateExternalLinks = function (root) {
+     var links = (root || window.document).querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+          if (!link.classList.contains('no-external-icon')) {
+          }
+        }
+      }
+      };
+      window.quartoDecorateExternalLinks(window.document);
+    // Esc closes the popup (WCAG 1.4.13) and focus leaving both trigger and
+    // popup closes it (WCAG 2.4.11); tippy handles neither for interactive popups.
+    const hideOnEscAndFocusOut = {
+      name: 'hideOnEscAndFocusOut',
+      defaultValue: true,
+      fn(instance) {
+        const dismiss = () => {
+          // A show scheduled by the trigger delay would otherwise reopen it
+          instance.clearDelayTimeouts();
+          instance.hide();
+        };
+        const onKeyDown = (event) => {
+          if (event.key !== 'Escape') {
+            return;
+          }
+          // Keep Esc from also reaching page handlers (e.g. reveal.js overview),
+          // except an open reveal.js slide menu, which Esc should close too.
+          // The menu handles keys only when its keyboard option is on.
+          const menuHandlesEsc = window.Reveal?.getPlugin?.('menu')?.isOpen() &&
+            window.Reveal.getConfig().menu?.keyboard !== false;
+          if (!menuHandlesEsc) {
+            event.stopPropagation();
+          }
+          if (instance.popper.contains(window.document.activeElement)) {
+            // Disabled while refocusing so the focus trigger does not reopen it
+            instance.disable();
+            instance.reference.focus();
+            instance.enable();
+          }
+          dismiss();
+        };
+        const onFocusOut = (event) => {
+          const target = event.relatedTarget;
+          if (target && !instance.reference.contains(target) &&
+              !instance.popper.contains(target)) {
+            dismiss();
+          }
+        };
+        // On the trigger too: a click trigger (code-annotations: select) has no
+        // blur handling. Attached for the instance's lifetime so leaving the
+        // trigger also cancels a show still pending on the trigger delay.
+        instance.reference.addEventListener('focusout', onFocusOut);
+        return {
+          onShow() {
+            window.document.addEventListener('keydown', onKeyDown, true);
+            instance.popper.addEventListener('focusout', onFocusOut);
+          },
+          onHide() {
+            window.document.removeEventListener('keydown', onKeyDown, true);
+            instance.popper.removeEventListener('focusout', onFocusOut);
+          },
+          onDestroy() {
+            instance.reference.removeEventListener('focusout', onFocusOut);
+          },
+        };
+      },
+    };
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+        plugins: [hideOnEscAndFocusOut],
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          // Each band is positioned against its own containing block, which is
+          // not the offsetParent of the lines, so place it from client rects.
+          const placeBand = (band, firstEl, lastEl, codeBlock) => {
+            const container = band.offsetParent;
+            if (container === null) {
+              return;
+            }
+            const containerRect = container.getBoundingClientRect();
+            // Reveal.js scales slides with a transform, so convert client
+            // pixels back to the CSS pixels of the container.
+            const scale = containerRect.height / container.offsetHeight || 1;
+            const firstRect = firstEl.getBoundingClientRect();
+            const lastRect = lastEl.getBoundingClientRect();
+            const top = (firstRect.top - containerRect.top) / scale - container.clientTop + container.scrollTop;
+            const height = (lastRect.bottom - firstRect.top) / scale;
+            band.style.top = top - 2 + "px";
+            band.style.height = height + 4 + "px";
+            if (codeBlock) {
+              // Without the copy button wrapper, the containing block is wider
+              // than the code block, so span the code block explicitly.
+              const blockRect = codeBlock.getBoundingClientRect();
+              band.style.left = (blockRect.left - containerRect.left) / scale - container.clientLeft + container.scrollLeft + "px";
+              band.style.width = blockRect.width / scale + "px";
+            }
+          };
+          if (lineIds.length > 0) {
+            const el = window.document.getElementById(lineIds[0]);
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const parent = el.parentElement.parentElement;
+            // cook up a div (if necessary) and position it
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            placeBand(div, el, lastEl, parent.closest("div.sourceCode") || parent);
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            placeBand(gutterDiv, el, lastEl);
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
+  </script>
+<input type="hidden" id="giscus-base-theme" value="light">
+<input type="hidden" id="giscus-alt-theme" value="dark">
+<script>
+  function loadGiscus() {
+    // Function to get the theme based on body class
+    const getTheme = () => {
+      let baseTheme = document.getElementById('giscus-base-theme').value;
+      let altTheme = document.getElementById('giscus-alt-theme').value;
+      return document.body.classList.contains('quarto-dark') ? altTheme : baseTheme;
+    };
+    const script = document.createElement("script");
+    script.src = "https://giscus.app/client.js";
+    script.async = true;
+    script.dataset.repo = "ASKurz/Statistical_Rethinking_with_brms_ggplot2_and_the_tidyverse";
+    script.dataset.repoId = "MDEwOlJlcG9zaXRvcnkxMjY3MTA2MTI=";
+    script.dataset.category = "General";
+    script.dataset.categoryId = "DIC_kwDOB41zVM4C1hSR";
+    script.dataset.mapping = "title";
+    script.dataset.reactionsEnabled = "1";
+    script.dataset.emitMetadata = "0";
+    script.dataset.inputPosition = "top";
+    script.dataset.theme = getTheme();
+    script.dataset.lang = "en";
+    script.crossOrigin = "anonymous";
+    // Append the script to the desired div instead of at the end of the body
+    document.getElementById("quarto-content").appendChild(script);
+  }
+  loadGiscus();
+</script>
+<nav class="page-navigation" aria-label="Page">
+  <div class="nav-page nav-page-previous">
+  </div>
+  <div class="nav-page nav-page-next">
+      <a href="./01.html" class="pagination-link" aria-label="The Golem of Prague">
+        <span class="nav-page-text"><span class="chapter-number">1</span>&nbsp; <span class="chapter-title">The Golem of Prague</span></span> <i class="bi bi-arrow-right-short"></i>
+      </a>
+  </div>
+</nav>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/ASKurz/Statistical_Rethinking_with_brms_ggplot2_and_the_tidyverse/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
