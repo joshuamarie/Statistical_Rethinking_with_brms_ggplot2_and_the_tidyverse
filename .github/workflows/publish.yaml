@@ -2,7 +2,7 @@ name: publish
 
 on:
   push:
-    branches: [master, ci-uvr-test]
+    branches: [master, fix-and-restructure-with-reformatting-and-ci-render]
   workflow_dispatch:
 
 jobs:
