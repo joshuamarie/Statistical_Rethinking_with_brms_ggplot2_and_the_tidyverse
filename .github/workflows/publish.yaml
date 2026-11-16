@@ -6,12 +6,30 @@ on:
   workflow_dispatch:
 
 jobs:
+  chapters:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.list.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: List chapters that contain R code
+        id: list
+        run: |
+          matrix=$(yq -r '.book.chapters[] | select(tag == "!!str")' _quarto.yml | tr -d '\r' | while read -r file; do
+            if grep -q '^```{r' "$file"; then
+              echo "${file%.qmd}"
+            fi
+          done | jq -R . | jq -sc .)
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+          echo "$matrix"
+
   render:
+    needs: chapters
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        chapter: ["index", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15"]
+        chapter: ${{ fromJSON(needs.chapters.outputs.matrix) }}
     steps:
       - uses: actions/checkout@v6
       - uses: r-lib/actions/setup-r@v2
@@ -68,3 +86,5 @@ jobs:
       - uses: quarto-dev/quarto-actions/publish@v2
         with:
           target: gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
