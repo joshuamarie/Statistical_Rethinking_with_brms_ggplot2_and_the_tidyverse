@@ -35,7 +35,18 @@ data("BTdata", package = "MCMCglmm")
 # 1.097207 mins on 01-16-2026
 # save(b15.1, file = "fits/b15.01.rda")
 # rm(b15.1)
-load("fits/b15.01.rda")
+if (file.exists("fits/b15.01.rda")) {
+    load("fits/b15.01.rda")
+} else {
+    b15.1 = brm(
+        data = BTdata,
+        family = gaussian,
+        bf(mvbind(tarsus, back) ~ sex + hatchdate + (1 | p | fosternest) + (1 | q | dam)) +
+            set_rescor(TRUE),
+        chains = 2, cores = 2,
+        seed = 15
+    )
+}
 ```
 
 ```{r, eval = F}
