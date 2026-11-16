@@ -10,17 +10,20 @@
 >
 > $$H(p) = - \sum_i p_i \log p_i$$
 >
-> This function is known as *information entropy*. 
+> This function is known as *information entropy*.
 >
 > The principle of maximum entropy applies this measure of uncertainty to the problem of choosing among probability distributions. Perhaps the simplest way to sate the maximum entropy principle is:
 >
->> The distribution that can happen the most ways is also the distribution with the biggest information entropy. The distribution with the biggest entropy is the most conservative distribution that obeys its constraints.
+> > The distribution that can happen the most ways is also the distribution with the biggest information entropy. The distribution with the biggest entropy is the most conservative distribution that obeys its constraints.
 >
 > There's nothing intuitive about this idea, so if it seems weird, you are normal. (pp. 268--269, *emphasis* in the original)
 
 Let's execute the code for the pebbles-in-buckets example.
 
-```{r, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+
 library(tidyverse)
 
 d <- tibble(
@@ -28,14 +31,15 @@ d <- tibble(
   b = c(0, 1, 8, 1, 0),
   c = c(0, 2, 6, 2, 0),
   d = c(1, 2, 4, 2, 1),
-  e = 2)
+  e = 2
+)
 
 # this is our analogue to McElreath's `lapply()` code
-d %>% 
-  mutate_all(~ . / sum(.)) %>% 
+d %>%
+  mutate_all(~ . / sum(.)) %>%
   # the next few lines constitute our analogue to his `sapply()` code
-  gather() %>% 
-  group_by(key) %>% 
+  gather() %>%
+  group_by(key) %>%
   summarise(h = -sum(ifelse(value == 0, 0, value * log(value))))
 ```
 
@@ -43,13 +47,19 @@ For more on the formula syntax we used within `mutate_all()`, you might check ou
 
 Anyway, we're almost ready to plot, which brings us to color. For the plots in this chapter, we'll be taking our color palettes from the [ghibli package](https://github.com/ewenme/ghibli) [@R-ghibli], which provides palettes based on scenes from anime films by the Studio Ghibli.
 
-```{r, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+
 library(ghibli)
 ```
 
 The main function is `ghibli_palette()` which you can use to both preview the palettes before using them and also index in order to use specific colors. For example, we'll play with "MarnieMedium1", first.
 
-```{r, fig.height = 1.5, fig.width = 5}
+```{r}
+#| fig-height: 1.5
+#| fig-width: 5
+
 ghibli_palette("MarnieMedium1")
 
 ghibli_palette("MarnieMedium1")[1:7]
@@ -57,53 +67,70 @@ ghibli_palette("MarnieMedium1")[1:7]
 
 Now we're ready to plot five of the six panels of Figure 9.1.
 
-```{r, fig.width = 6, fig.height = 5}
-d %>% 
-  mutate(bucket = 1:5) %>% 
-  gather(letter, pebbles, - bucket) %>% 
-  
+```{r}
+#| fig-width: 6
+#| fig-height: 5
+
+d %>%
+  mutate(bucket = 1:5) %>%
+  gather(letter, pebbles, -bucket) %>%
+
   ggplot(aes(x = bucket, y = pebbles)) +
-  geom_col(width = 1/5, fill = ghibli_palette("MarnieMedium1")[2]) +
+  geom_col(width = 1 / 5, fill = ghibli_palette("MarnieMedium1")[2]) +
   geom_text(aes(y = pebbles + 1, label = pebbles)) +
-  geom_text(data = tibble(
-    letter  = letters[1:5],
-    bucket  = 5.5,
-    pebbles = 10.5,
-    label   = str_c(c(1, 90, 1260, 37800, 113400), 
-                    rep(c(" way", " ways"), times = c(1, 4)))),
-    aes(label = label), 
-    hjust = 1) +
+  geom_text(
+    data = tibble(
+      letter = letters[1:5],
+      bucket = 5.5,
+      pebbles = 10.5,
+      label = str_c(
+        c(1, 90, 1260, 37800, 113400),
+        rep(c(" way", " ways"), times = c(1, 4))
+      )
+    ),
+    aes(label = label),
+    hjust = 1
+  ) +
   scale_y_continuous(breaks = c(0, 5, 10), limits = c(0, 12)) +
-  theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("MarnieMedium1")[6]),
-        strip.background = element_rect(fill = ghibli_palette("MarnieMedium1")[7])) +
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("MarnieMedium1")[6]),
+    strip.background = element_rect(fill = ghibli_palette("MarnieMedium1")[7])
+  ) +
   facet_wrap(~letter, ncol = 2)
 ```
 
 We might plot our version of the final panel like so.
 
-```{r, fig.width = 3, fig.height = 2.75, message = F}
-d %>% 
+```{r}
+#| message: false
+#| fig-width: 3
+#| fig-height: 2.75
+
+d %>%
   # the next four lines are the same from above
-  mutate_all(~ . / sum(.)) %>% 
-  gather() %>% 
-  group_by(key) %>% 
-  summarise(h = -sum(ifelse(value == 0, 0, value * log(value)))) %>% 
+  mutate_all(~ . / sum(.)) %>%
+  gather() %>%
+  group_by(key) %>%
+  summarise(h = -sum(ifelse(value == 0, 0, value * log(value)))) %>%
   # here's the R code 9.4 stuff
-  mutate(n_ways   = c(1, 90, 1260, 37800, 113400)) %>% 
-  group_by(key) %>% 
-  mutate(log_ways = log(n_ways) / 10,
-         text_y   = ifelse(key < "c", h + .15, h - .15)) %>%
-  
+  mutate(n_ways = c(1, 90, 1260, 37800, 113400)) %>%
+  group_by(key) %>%
+  mutate(
+    log_ways = log(n_ways) / 10,
+    text_y = ifelse(key < "c", h + .15, h - .15)
+  ) %>%
+
   # plot
   ggplot(aes(x = log_ways, y = h)) +
   geom_abline(intercept = 0, slope = 1.37, color = "white") +
   geom_point(size = 2.5, color = ghibli_palette("MarnieMedium1")[7]) +
   geom_text(aes(y = text_y, label = key)) +
-  labs(x = "log(ways) per pebble",
-       y = "entropy") +
-  theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("MarnieMedium1")[6]))
+  labs(x = "log(ways) per pebble", y = "entropy") +
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("MarnieMedium1")[6])
+  )
 ```
 
 "The distribution that can happen the greatest number of ways is the most plausible distribution. Call this distribution the maximum entropy distribution" (p. 271). Among the pebbles, the maximum entropy distribution was `e` (i.e., the uniform).
@@ -128,53 +155,72 @@ $$\alpha = \sqrt{ \frac{\sigma^2 \Gamma (1/\beta)}{\Gamma (3/\beta)} }.$$
 
 I got the formula from [Wikipedia.com](https://en.wikipedia.org/wiki/Generalized_normal_distribution). Don't judge. We can wrap that formula in a custom function, `alpha_per_beta()`, use it to solve for the desired $\beta$ values, and plot. But one more thing: McElreath didn't tell us exactly which $\beta$ values the left panel of Figure 9.2 was based on. So the plot below is my best guess.
 
-```{r, fig.width = 3.5, fig.height = 3}
+```{r}
+#| fig-width: 3.5
+#| fig-height: 3
+
 alpha_per_beta <- function(beta, variance = 1) {
   sqrt((variance * gamma(1 / beta)) / gamma(3 / beta))
 }
 
-tibble(mu   = 0,
-       # I arrived at these values by trial and error
-       beta = c(1, 1.5, 2, 4)) %>% 
-  mutate(alpha = alpha_per_beta(beta)) %>% 
-  expand_grid(value = seq(from = -5, to = 5, by = .01)) %>% 
+tibble(
+  mu = 0,
+  # I arrived at these values by trial and error
+  beta = c(1, 1.5, 2, 4)
+) %>%
+  mutate(alpha = alpha_per_beta(beta)) %>%
+  expand_grid(value = seq(from = -5, to = 5, by = .01)) %>%
   # behold the formula for the generalized normal distribution in code!
-  mutate(density = (beta / (2 * alpha * gamma(1 / beta))) * 
-           exp(1) ^ (-1 * (abs(value - mu) / alpha) ^ beta)) %>% 
-  
+  mutate(
+    density = (beta / (2 * alpha * gamma(1 / beta))) *
+      exp(1)^(-1 * (abs(value - mu) / alpha)^beta)
+  ) %>%
+
   # plot
   ggplot(aes(x = value, y = density, group = beta)) +
   geom_line(aes(color = beta == 2, linewidth = beta == 2)) +
   scale_color_manual(values = c(ghibli_palette("MarnieMedium2")[c(2, 4)])) +
-  scale_linewidth_manual(values = c(1/4, 1.25)) +
+  scale_linewidth_manual(values = c(1 / 4, 1.25)) +
   labs(subtitle = "Guess which color denotes the Gaussian.") +
   coord_cartesian(xlim = c(-4, 4)) +
-  theme(legend.position = "none",
-        panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("MarnieMedium2")[7]))
+  theme(
+    legend.position = "none",
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("MarnieMedium2")[7])
+  )
 ```
 
 Here's Figure 9.2's right panel.
 
-```{r, fig.width = 3.5, fig.height = 3, message = F}
-tibble(mu   = 0,
-       # this time we need a more densely-packed sequence of `beta` values
-       beta = seq(from = 1, to = 4, length.out = 100)) %>% 
-  mutate(alpha = alpha_per_beta(beta)) %>% 
-  expand_grid(value = -8:8) %>% 
-  mutate(density = (beta / (2 * alpha * gamma(1 / beta))) * 
-           exp(1) ^ (-1 * (abs(value - mu) / alpha) ^ beta)) %>% 
-  group_by(beta) %>% 
+```{r}
+#| message: false
+#| fig-width: 3.5
+#| fig-height: 3
+
+tibble(
+  mu = 0,
+  # this time we need a more densely-packed sequence of `beta` values
+  beta = seq(from = 1, to = 4, length.out = 100)
+) %>%
+  mutate(alpha = alpha_per_beta(beta)) %>%
+  expand_grid(value = -8:8) %>%
+  mutate(
+    density = (beta / (2 * alpha * gamma(1 / beta))) *
+      exp(1)^(-1 * (abs(value - mu) / alpha)^beta)
+  ) %>%
+  group_by(beta) %>%
   # this is just an abbreviated version of the formula we used in our first code block
-  summarise(entropy = -sum(density * log(density))) %>% 
-  
+  summarise(entropy = -sum(density * log(density))) %>%
+
   ggplot(aes(x = beta, y = entropy)) +
   geom_vline(xintercept = 2, color = "white") +
   geom_line(linewidth = 2, color = ghibli_palette("MarnieMedium2")[6]) +
-  xlab(expression(beta*" (i.e., shape)")) +
+  xlab(expression(beta * " (i.e., shape)")) +
   coord_cartesian(ylim = c(1.34, 1.42)) +
-  theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("MarnieMedium2")[7]))
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("MarnieMedium2")[7])
+  )
 ```
 
 If you look closely, you'll see our version doesn't quite match up with McElreath's. Over $x$-axis values of 2 to 4, they match up pretty well. But as you go from 2 to 1, you'll see our line drops off more steeply than his did. [And no, `coord_cartesian()` isn't the problem.] If you can figure out why our numbers diverged, [please share the answer](https://github.com/ASKurz/Statistical_Rethinking_with_brms_ggplot2_and_the_tidyverse/issues).
@@ -187,7 +233,7 @@ But getting back on track:
 
 The binomial likelihood entails
 
-> counting the numbers of ways that a given observation could arise, according to assumptions... If only two things can happen (blue or white marble, for example), and there's a constant chance $p$ of each across $n$ trials, then the probability of observing $y$ events of type 1 and $n - y$ events of type 2 is: 
+> counting the numbers of ways that a given observation could arise, according to assumptions... If only two things can happen (blue or white marble, for example), and there's a constant chance $p$ of each across $n$ trials, then the probability of observing $y$ events of type 1 and $n - y$ events of type 2 is:
 >
 > $$\Pr(y \mid n, p) = \frac{n!}{y! (n - y)!} p^y (1 - p)^{n - y}$$
 >
@@ -205,69 +251,75 @@ count_ways <- function(n, y) {
 
 Now consider three sequences:
 
-* 0, 0, 0, 0 (i.e., $n = 4$ and $y = 0$)
-* 1, 0, 0, 0 (i.e., $n = 4$ and $y = 1$)
-* 1, 1, 0, 0 (i.e., $n = 4$ and $y = 2$)
+- 0, 0, 0, 0 (i.e., $n = 4$ and $y = 0$)
+- 1, 0, 0, 0 (i.e., $n = 4$ and $y = 1$)
+- 1, 1, 0, 0 (i.e., $n = 4$ and $y = 2$)
 
 We can organize that information in a little tibble and then demo our `count_ways()` function.
 
 ```{r}
-tibble(sequence = 1:3,
-       n        = 4,
-       y        = c(0, 1, 2)) %>% 
+tibble(sequence = 1:3, n = 4, y = c(0, 1, 2)) %>%
   mutate(n_ways = count_ways(n = n, y = y))
 ```
 
 Here's the pre-Figure 9.3 data McElreath presented at the bottom of page 275.
 
 ```{r}
-(
-  d <- tibble(
-    distribution = letters[1:4],
-    ww = c(1/4, 2/6, 1/6, 1/8),
-    bw = c(1/4, 1/6, 2/6, 4/8),
-    wb = c(1/4, 1/6, 2/6, 2/8),
-    bb = c(1/4, 2/6, 1/6, 1/8))
-) 
+(d <- tibble(
+  distribution = letters[1:4],
+  ww = c(1 / 4, 2 / 6, 1 / 6, 1 / 8),
+  bw = c(1 / 4, 1 / 6, 2 / 6, 4 / 8),
+  wb = c(1 / 4, 1 / 6, 2 / 6, 2 / 8),
+  bb = c(1 / 4, 2 / 6, 1 / 6, 1 / 8)
+))
 ```
 
 Those data take just a tiny bit of wrangling before they're ready to plot in our version of Figure 9.3.
 
-```{r, fig.width = 4, fig.height = 3.5}
-d %>% 
-  gather(key, value, -distribution) %>% 
-  mutate(key = factor(key, levels = c("ww", "bw", "wb", "bb"))) %>% 
-  
+```{r}
+#| fig-width: 4
+#| fig-height: 3.5
+
+d %>%
+  gather(key, value, -distribution) %>%
+  mutate(key = factor(key, levels = c("ww", "bw", "wb", "bb"))) %>%
+
   ggplot(aes(x = key, y = value, group = 1)) +
   geom_point(size = 2, color = ghibli_palette("PonyoMedium")[4]) +
   geom_line(color = ghibli_palette("PonyoMedium")[5]) +
   labs(x = NULL, y = NULL) +
   coord_cartesian(ylim = c(0, 1)) +
-  theme(axis.ticks.x = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("PonyoMedium")[2]),
-        panel.grid = element_blank(),
-        strip.background = element_rect(fill = ghibli_palette("PonyoMedium")[6])) +
+  theme(
+    axis.ticks.x = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("PonyoMedium")[2]),
+    panel.grid = element_blank(),
+    strip.background = element_rect(fill = ghibli_palette("PonyoMedium")[6])
+  ) +
   facet_wrap(~distribution)
 ```
 
 If we go step by step, we might count the expected value for each `distribution` like follows.
 
-```{r, message = F}
-d %>% 
-  gather(sequence, probability, -distribution) %>% 
+```{r}
+#| message: false
+
+d %>%
+  gather(sequence, probability, -distribution) %>%
   # `str_count()` will count the number of times "b" occurs within a given row of `sequence`
-  mutate(n_b = str_count(sequence, "b")) %>% 
-  mutate(product = probability * n_b) %>% 
-  group_by(distribution) %>% 
+  mutate(n_b = str_count(sequence, "b")) %>%
+  mutate(product = probability * n_b) %>%
+  group_by(distribution) %>%
   summarise(expected_value = sum(product))
 ```
 
 We can use the same `gather()` and `group_by()` strategies on the way to computing the entropies.
 
-```{r, message = F}
-d %>% 
-  gather(sequence, probability, -distribution) %>% 
-  group_by(distribution) %>% 
+```{r}
+#| message: false
+
+d %>%
+  gather(sequence, probability, -distribution) %>%
+  group_by(distribution) %>%
   summarise(entropy = -sum(probability * log(probability)))
 ```
 
@@ -276,10 +328,7 @@ Like in the text, `distribution == "a"` had the largest `entropy` of the four. I
 ```{r}
 p <- 0.7
 
-a <- c((1 - p)^2, 
-       p * (1 - p), 
-       (1 - p) * p, 
-       p^2)
+a <- c((1 - p)^2, p * (1 - p), (1 - p) * p, p^2)
 
 a
 ```
@@ -295,14 +344,16 @@ I'm going to alter McElreath's simulation function from R code block 9.9 to take
 ```{r}
 sim_p <- function(seed, g = 1.4) {
   set.seed(seed)
-  
+
   x_123 <- runif(3)
-  x_4   <- ((g) * sum(x_123) - x_123[2] - x_123[3]) / (2 - g)
-  z     <- sum(c(x_123, x_4))
-  p     <- c(x_123, x_4) / z
-  tibble(h   = -sum(p * log(p)), 
-         p   = p,
-         key = factor(c("ww", "bw", "wb", "bb"), levels = c("ww", "bw", "wb", "bb")))
+  x_4 <- ((g) * sum(x_123) - x_123[2] - x_123[3]) / (2 - g)
+  z <- sum(c(x_123, x_4))
+  p <- c(x_123, x_4) / z
+  tibble(
+    h = -sum(p * log(p)),
+    p = p,
+    key = factor(c("ww", "bw", "wb", "bb"), levels = c("ww", "bw", "wb", "bb"))
+  )
 }
 ```
 
@@ -314,18 +365,22 @@ sim_p(seed = 9.9, g = 1.4)
 
 So the next step is to determine how many replications we'd like, create a tibble with seed values ranging from 1 to that number, and then feed those `seed` values into `sim_p()` via `purrr::map2()`, which will return a nested tibble. We'll then `unnest()` and take a peek.
 
-```{r, echo = F}
+```{r}
+#| echo: false
+
 # the sim took1.549338 mins to run
 # save(list = c("n_rep", "d"), file = "sims/09.sim_1.rda")
 load("sims/09.sim_1.rda")
 ```
 
-```{r, eval = F}
+```{r}
+#| eval: false
+
 # how many replications would you like?
 n_rep <- 1e5
 
-d <- tibble(seed = 1:n_rep) %>% 
-  mutate(sim = map2(seed, 1.4, sim_p)) %>% 
+d <- tibble(seed = 1:n_rep) %>%
+  mutate(sim = map2(seed, 1.4, sim_p)) %>%
   unnest(sim)
 ```
 
@@ -338,9 +393,9 @@ head(d)
 In order to intelligently choose which four replications we want to highlight in Figure 9.4, we'll want to rank order them by entropy, `h`.
 
 ```{r}
-ranked_d <- d %>% 
-  group_by(seed) %>% 
-  arrange(desc(h)) %>% 
+ranked_d <- d %>%
+  group_by(seed) %>%
+  arrange(desc(h)) %>%
   ungroup() %>%
   # here's the rank order step
   mutate(rank = rep(1:n_rep, each = 4))
@@ -353,10 +408,12 @@ And we'll also want a subset of the data to correspond to McElreath's "A" throug
 ```{r}
 subset_d <- ranked_d %>%
   # I arrived at these `rank` values by trial and error
-  filter(rank %in% c(1, 87373, n_rep - 1500, n_rep - 10)) %>% 
+  filter(rank %in% c(1, 87373, n_rep - 1500, n_rep - 10)) %>%
   # I arrived at the `height` values by trial and error, too
-  mutate(height       = rep(c(8, 2.25, .75, .5), each = 4),
-         distribution = rep(letters[1:4], each = 4))
+  mutate(
+    height = rep(c(8, 2.25, .75, .5), each = 4),
+    distribution = rep(letters[1:4], each = 4)
+  )
 
 head(subset_d)
 ```
@@ -364,37 +421,51 @@ head(subset_d)
 We're finally ready to make our version of the left panel of Figure 9.4.
 
 ```{r}
-p1 <- d %>% 
+p1 <- d %>%
   ggplot(aes(x = h)) +
-  geom_density(linewidth = 0, fill = ghibli_palette("LaputaMedium")[3],
-               adjust = 1/4) +
+  geom_density(
+    linewidth = 0,
+    fill = ghibli_palette("LaputaMedium")[3],
+    adjust = 1 / 4
+  ) +
   # note the data statements for the next two geoms
-  geom_linerange(data = subset_d %>% group_by(seed) %>% slice(1),
-                 aes(ymin = 0, ymax = height),
-                 color = ghibli_palette("LaputaMedium")[5]) +
-  geom_text(data = subset_d %>% group_by(seed) %>% slice(1),
-            aes(y = height + .5, label = distribution)) +
+  geom_linerange(
+    data = subset_d %>% group_by(seed) %>% slice(1),
+    aes(ymin = 0, ymax = height),
+    color = ghibli_palette("LaputaMedium")[5]
+  ) +
+  geom_text(
+    data = subset_d %>% group_by(seed) %>% slice(1),
+    aes(y = height + .5, label = distribution)
+  ) +
   scale_x_continuous("Entropy", breaks = seq(from = .7, to = 1.2, by = .1)) +
-  theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("LaputaMedium")[7]))
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("LaputaMedium")[7])
+  )
 ```
 
 Did you notice how our `adjust = 1/4` with `geom_density()` served a similar function to the `adj=0.1` in McElreath's `dens()` code? Anyways, here we make the right panel and combine the two with patchwork.
 
-```{r, fig.width = 7, fig.height = 3.5}
+```{r}
+#| fig-width: 7
+#| fig-height: 3.5
+
 p2 <- ranked_d %>%
-  filter(rank %in% c(1, 87373, n_rep - 1500, n_rep - 10)) %>% 
-  mutate(distribution = rep(letters[1:4], each = 4)) %>% 
+  filter(rank %in% c(1, 87373, n_rep - 1500, n_rep - 10)) %>%
+  mutate(distribution = rep(letters[1:4], each = 4)) %>%
 
   ggplot(aes(x = key, y = p, group = 1)) +
   geom_line(color = ghibli_palette("LaputaMedium")[5]) +
   geom_point(size = 2, color = ghibli_palette("LaputaMedium")[4]) +
   scale_y_continuous(NULL, breaks = NULL, limits = c(0, .75)) +
   xlab(NULL) +
-  theme(axis.ticks.x = element_blank(),
-        panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("LaputaMedium")[7]),
-        strip.background = element_rect(fill = ghibli_palette("LaputaMedium")[6])) +
+  theme(
+    axis.ticks.x = element_blank(),
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("LaputaMedium")[7]),
+    strip.background = element_rect(fill = ghibli_palette("LaputaMedium")[6])
+  ) +
   facet_wrap(~distribution)
 
 # combine and plot
@@ -408,9 +479,9 @@ Because we were simulating, our values won't match up identically with those in 
 Since we saved our `sim_p()` output in a nested tibble, which we then `unnested()`, there's no need to separate the entropy values from the distributional values the way McElreath did in R code 9.11. If we wanted to determine our highest entropy value--and the corresponding `seed` and `p` values, while we're at it--, we might execute something like this.
 
 ```{r}
-ranked_d %>% 
-  group_by(key) %>% 
-  arrange(desc(h)) %>% 
+ranked_d %>%
+  group_by(key) %>%
+  arrange(desc(h)) %>%
   slice(1)
 ```
 
@@ -428,27 +499,46 @@ a
 
 I winged the values for our Figure 9.5.
 
-```{r, fig.width = 3.25, fig.height = 3}
+```{r}
+#| fig-width: 3.25
+#| fig-height: 3
+
 tibble(x = seq(from = -1, to = 3, by = .01)) %>%
-  mutate(probability = .35 + x * .5) %>% 
+  mutate(probability = .35 + x * .5) %>%
 
   ggplot(aes(x = x, y = probability)) +
-  geom_rect(xmin = -1, xmax = 3,
-            ymin = 0,  ymax = 1,
-            fill = ghibli_palette("MononokeMedium")[5]) +
-  geom_hline(yintercept = 0:1, linetype = 2, color = ghibli_palette("MononokeMedium")[7]) +
-  geom_line(aes(linetype = probability > 1, color = probability > 1),
-            linewidth = 1) +
-  geom_segment(x = 1.3, xend = 3,
-               y = 1, yend = 1,
-               linewidth = 2/3, color = ghibli_palette("MononokeMedium")[3]) +
+  geom_rect(
+    xmin = -1,
+    xmax = 3,
+    ymin = 0,
+    ymax = 1,
+    fill = ghibli_palette("MononokeMedium")[5]
+  ) +
+  geom_hline(
+    yintercept = 0:1,
+    linetype = 2,
+    color = ghibli_palette("MononokeMedium")[7]
+  ) +
+  geom_line(
+    aes(linetype = probability > 1, color = probability > 1),
+    linewidth = 1
+  ) +
+  geom_segment(
+    x = 1.3,
+    xend = 3,
+    y = 1,
+    yend = 1,
+    linewidth = 2 / 3,
+    color = ghibli_palette("MononokeMedium")[3]
+  ) +
   scale_color_manual(values = c(ghibli_palette("MononokeMedium")[c(3, 4)])) +
   scale_y_continuous(breaks = c(0, .5, 1)) +
-  coord_cartesian(xlim = c(0, 2),
-                  ylim = c(0, 1.2)) +
-  theme(legend.position = "none",
-        panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("MononokeMedium")[1]))
+  coord_cartesian(xlim = c(0, 2), ylim = c(0, 1.2)) +
+  theme(
+    legend.position = "none",
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("MononokeMedium")[1])
+  )
 ```
 
 > For a count outcome $y$ for which each observation arises from $n$ trials and with constant expected value $np$, the binomial distribution has maximum entropy. So it's the least informative distribution that satisfies our prior knowledge of the outcomes $y$. (p. 281)
@@ -470,77 +560,101 @@ Let's get more general.
 
 Here are the Gamma and Exponential panels for Figure 9.6.
 
-```{r, fig.width = 6, fig.height = 2.25}
+```{r}
+#| fig-width: 6
+#| fig-height: 2.25
+
 length_out <- 100
 
-tibble(x = seq(from = 0, to = 5, length.out = length_out)) %>% 
-  mutate(Gamma       = dgamma(x, 2, 2),
-         Exponential = dexp(x)) %>% 
-  gather(key, density, -x) %>% 
-  mutate(label = rep(c("y %~% Gamma(lambda, kappa)", "y %~% Exponential(lambda)"), each = n()/2)) %>% 
-  
+tibble(x = seq(from = 0, to = 5, length.out = length_out)) %>%
+  mutate(Gamma = dgamma(x, 2, 2), Exponential = dexp(x)) %>%
+  gather(key, density, -x) %>%
+  mutate(
+    label = rep(
+      c("y %~% Gamma(lambda, kappa)", "y %~% Exponential(lambda)"),
+      each = n() / 2
+    )
+  ) %>%
+
   ggplot(aes(x = x, ymin = 0, ymax = density)) +
   geom_ribbon(fill = ghibli_palette("SpiritedMedium")[3]) +
   scale_x_continuous(NULL, breaks = NULL) +
   scale_y_continuous(NULL, breaks = NULL) +
   coord_cartesian(xlim = c(0, 4)) +
-  theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("SpiritedMedium")[5]),
-        strip.background = element_rect(fill = ghibli_palette("SpiritedMedium")[7])) +
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("SpiritedMedium")[5]),
+    strip.background = element_rect(fill = ghibli_palette("SpiritedMedium")[7])
+  ) +
   facet_wrap(~label, scales = "free_y", labeller = label_parsed)
 ```
 
 The Gaussian:
 
-```{r, fig.width = 3, fig.height = 2.25}
-tibble(x = seq(from = -5, to = 5, length.out = length_out)) %>% 
-  mutate(density = dnorm(x),
-         strip   = "y %~% Normal(mu, sigma)") %>% 
+```{r}
+#| fig-width: 3
+#| fig-height: 2.25
+
+tibble(x = seq(from = -5, to = 5, length.out = length_out)) %>%
+  mutate(density = dnorm(x), strip = "y %~% Normal(mu, sigma)") %>%
 
   ggplot(aes(x = x, ymin = 0, ymax = density)) +
   geom_ribbon(fill = ghibli_palette("SpiritedMedium")[3]) +
   scale_x_continuous(NULL, breaks = NULL) +
   scale_y_continuous(NULL, breaks = NULL) +
   coord_cartesian(xlim = c(-4, 4)) +
-  theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("SpiritedMedium")[5]),
-        strip.background = element_rect(fill = ghibli_palette("SpiritedMedium")[7])) +
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("SpiritedMedium")[5]),
+    strip.background = element_rect(fill = ghibli_palette("SpiritedMedium")[7])
+  ) +
   facet_wrap(~strip, labeller = label_parsed)
 ```
 
 Here is the Poisson.
 
-```{r, fig.width = 3, fig.height = 2.25}
-tibble(x = 0:20) %>% 
-  mutate(density = dpois(x, lambda = 2.5),
-         strip   = "y %~% Poisson(lambda)") %>% 
+```{r}
+#| fig-width: 3
+#| fig-height: 2.25
+
+tibble(x = 0:20) %>%
+  mutate(density = dpois(x, lambda = 2.5), strip = "y %~% Poisson(lambda)") %>%
 
   ggplot(aes(x = x, y = density)) +
-  geom_col(fill = ghibli_palette("SpiritedMedium")[2], width = 1/2) +
+  geom_col(fill = ghibli_palette("SpiritedMedium")[2], width = 1 / 2) +
   scale_x_continuous(NULL, breaks = NULL) +
   scale_y_continuous(NULL, breaks = NULL) +
   coord_cartesian(xlim = c(0, 10)) +
-  theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("SpiritedMedium")[5]),
-        strip.background = element_rect(fill = ghibli_palette("SpiritedMedium")[7])) +
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("SpiritedMedium")[5]),
+    strip.background = element_rect(fill = ghibli_palette("SpiritedMedium")[7])
+  ) +
   facet_wrap(~strip, labeller = label_parsed)
 ```
 
 Finally, the Binomial:
 
-```{r, fig.width = 3, fig.height = 2.25}
-tibble(x = 0:10) %>% 
-  mutate(density = dbinom(x, size = 10, prob = .85),
-         strip   = "y %~% Binomial(n, p)") %>% 
+```{r}
+#| fig-width: 3
+#| fig-height: 2.25
+
+tibble(x = 0:10) %>%
+  mutate(
+    density = dbinom(x, size = 10, prob = .85),
+    strip = "y %~% Binomial(n, p)"
+  ) %>%
 
   ggplot(aes(x = x, y = density)) +
-  geom_col(fill = ghibli_palette("SpiritedMedium")[2], width = 1/2) +
+  geom_col(fill = ghibli_palette("SpiritedMedium")[2], width = 1 / 2) +
   scale_x_continuous(NULL, breaks = NULL) +
   scale_y_continuous(NULL, breaks = NULL) +
   coord_cartesian(xlim = c(0, 10)) +
-  theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("SpiritedMedium")[5]),
-        strip.background = element_rect(fill = ghibli_palette("SpiritedMedium")[7])) +
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("SpiritedMedium")[5]),
+    strip.background = element_rect(fill = ghibli_palette("SpiritedMedium")[7])
+  ) +
   facet_wrap(~strip, labeller = label_parsed)
 ```
 
@@ -563,7 +677,7 @@ f(\theta_i) & = \alpha + \beta x_i,
 
 where $\theta_i$ is a parameter of central interest (e.g., the probability of 1 in a Binomial distribution) and $\phi$ is a placeholder for any other parameters necessary for the likelihood but not of primary substantive interest (e.g., $\sigma$ in work-a-day Gaussian models). And as stated earlier, $f()$ is the link function.
 
-Speaking of, 
+Speaking of,
 
 > the logit link maps a parameter that is defined as a probability mass and therefore constrained to lie between zero and one, onto a linear model that can take on any real value. This link is extremely common when working with binomial GLMs. In the context of a model definition, it looks like this:
 >
@@ -586,48 +700,65 @@ $$p_i = \frac{\exp (\alpha + \beta x_i)}{1 + \exp (\alpha + \beta x_i)}.$$
 
 As we'll see later, we will make great use of this formula via the `brms::inv_logit_scaled()` when making sense of logistic regression models. Now we have that last formula in hand, we can make the data necessary for Figure 9.7.
 
-```{r, fig.width = 6, fig.height = 2.5, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+#| fig-width: 6
+#| fig-height: 2.5
+
 # first, we'll make data for the horizontal lines
 alpha <- 0
-beta  <- 4
+beta <- 4
 
-lines <- tibble(x = seq(from = -1, to = 1, by = .25)) %>% 
-  mutate(`log-odds`  = alpha + x * beta,
-         probability = exp(alpha + x * beta) / (1 + exp(alpha + x * beta)))
+lines <- tibble(x = seq(from = -1, to = 1, by = .25)) %>%
+  mutate(
+    `log-odds` = alpha + x * beta,
+    probability = exp(alpha + x * beta) / (1 + exp(alpha + x * beta))
+  )
 
 # now we're ready to make the primary data
 beta <- 2
 
-d <- tibble(x = seq(from = -1.5, to = 1.5, length.out = 50)) %>% 
-  mutate(`log-odds`  = alpha + x * beta,
-         probability = exp(alpha + x * beta) / (1 + exp(alpha + x * beta))) 
+d <- tibble(x = seq(from = -1.5, to = 1.5, length.out = 50)) %>%
+  mutate(
+    `log-odds` = alpha + x * beta,
+    probability = exp(alpha + x * beta) / (1 + exp(alpha + x * beta))
+  )
 
 # now we make the individual plots
-p1 <- d %>% 
+p1 <- d %>%
   ggplot(aes(x = x, y = `log-odds`)) +
-  geom_hline(data = lines,
-             aes(yintercept = `log-odds`),
-             color = ghibli_palette("YesterdayMedium")[6]) +
+  geom_hline(
+    data = lines,
+    aes(yintercept = `log-odds`),
+    color = ghibli_palette("YesterdayMedium")[6]
+  ) +
   geom_line(linewidth = 1.5, color = ghibli_palette("YesterdayMedium")[3]) +
   coord_cartesian(xlim = c(-1, 1)) +
-  theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("YesterdayMedium")[5]))
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("YesterdayMedium")[5])
+  )
 
-p2 <- d %>% 
+p2 <- d %>%
   ggplot(aes(x = x, y = probability)) +
-  geom_hline(data = lines,
-             aes(yintercept = probability),
-             color = ghibli_palette("YesterdayMedium")[6]) +
+  geom_hline(
+    data = lines,
+    aes(yintercept = probability),
+    color = ghibli_palette("YesterdayMedium")[6]
+  ) +
   geom_line(linewidth = 1.5, color = ghibli_palette("YesterdayMedium")[3]) +
   coord_cartesian(xlim = c(-1, 1)) +
-  theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("YesterdayMedium")[7]))
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("YesterdayMedium")[7])
+  )
 
 # finally, we're ready to mash the plots together and behold their nerdy glory
 p1 | p2
 ```
 
-> The key lesson for now is just that no regression coefficient, such as $\beta$, from a GLM ever produces a constant change on the outcome scale. Recall that we defined interaction (@sec-Interactions) as a situation in which the effect of a predictor depends upon the value of another predictor. Well now every predictor essentially interacts with itself, because the impact of a change in a predictor depends upon the value of the predictor before the change... 
+> The key lesson for now is just that no regression coefficient, such as $\beta$, from a GLM ever produces a constant change on the outcome scale. Recall that we defined interaction (@sec-Interactions) as a situation in which the effect of a predictor depends upon the value of another predictor. Well now every predictor essentially interacts with itself, because the impact of a change in a predictor depends upon the value of the predictor before the change...
 >
 > The second very common link function is the log link. This link function maps a parameter that is defined over only positive real values onto a linear model. For example, suppose we want to model the standard deviation of $\sigma$ of a Gaussian distribution so it is a function of a predictor variable $x$. The parameter $\sigma$ must be positive, because a standard deviation cannot be negative no can it be zero. The model might look like:
 >
@@ -643,49 +774,65 @@ This kind of model is trivial in the brms framework, which you can learn more ab
 
 ```{r}
 set.seed(9)
-(
-  d <- tibble(x = rep(0:1, each = 100)) %>% 
-  mutate(y = rnorm(n = n(), mean = 100, sd = 10 + x * 10))
-)
+(d <- tibble(x = rep(0:1, each = 100)) %>%
+  mutate(y = rnorm(n = n(), mean = 100, sd = 10 + x * 10)))
 ```
 
 We can view what data like these look like with aid from `tidybayes::stat_halfeye()`.
 
-```{r, fig.width = 3.5, fig.height = 3, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+#| fig-width: 3.5
+#| fig-height: 3
+
 library(tidybayes)
 
-d %>% 
-  mutate(x = x %>% as.character()) %>% 
-  
+d %>%
+  mutate(x = x %>% as.character()) %>%
+
   ggplot(aes(x = y, y = x, fill = x)) +
-  stat_halfeye(point_interval = mean_qi, .width = .68,
-               color = ghibli_palette("KikiMedium")[2]) +
+  stat_halfeye(
+    point_interval = mean_qi,
+    .width = .68,
+    color = ghibli_palette("KikiMedium")[2]
+  ) +
   scale_fill_manual(values = c(ghibli_palette("KikiMedium")[c(4, 6)])) +
   coord_cartesian(ylim = c(1.5, 2)) +
-  theme(axis.ticks.y = element_blank(),
-        legend.position = "none",
-        panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("KikiMedium")[7]))
+  theme(
+    axis.ticks.y = element_blank(),
+    legend.position = "none",
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("KikiMedium")[7])
+  )
 ```
 
 Even though the means of `y` are the same for both levels of the `x` dummy, the variance for `x == 1` is substantially larger than that for `x == 0`. Let's open brms.
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 library(brms)
 ```
 
 For such a model, we have two formulas: one for $\mu$ and one for $\sigma$. We wrap both within the `bf()` function.
 
-```{r b9.1}
+```{r}
+#| label: b9.1
+
 b9.1 <- brm(
   data = d,
   family = gaussian,
   bf(y ~ 1, sigma ~ 1 + x),
-  prior = c(prior(normal(100, 10), class = Intercept),
-            prior(normal(0, 10),   class = Intercept, dpar = sigma),
-            prior(normal(0, 10),   class = b,         dpar = sigma)),
+  prior = c(
+    prior(normal(100, 10), class = Intercept),
+    prior(normal(0, 10), class = Intercept, dpar = sigma),
+    prior(normal(0, 10), class = b, dpar = sigma)
+  ),
   seed = 9,
-  file = "fits/b09.01")
+  file = "fits/b09.01"
+)
 ```
 
 Do note our use of the `dpar` arguments in the `prior` statements. Here's the summary.
@@ -704,32 +851,47 @@ head(post)
 
 With the samples in hand, we’ll use the model formula to compute the model-implied standard deviations of `y` based on the `x` dummy and then examine them in a plot.
 
-```{r, fig.width = 3.75, fig.height = 2.5, warning = F}
-post %>% 
-  transmute(`x == 0` = exp(b_sigma_Intercept + b_sigma_x * 0),
-            `x == 1` = exp(b_sigma_Intercept + b_sigma_x * 1)) %>% 
-  gather(key, sd) %>% 
-  
+```{r}
+#| warning: false
+#| fig-width: 3.75
+#| fig-height: 2.5
+
+post %>%
+  transmute(
+    `x == 0` = exp(b_sigma_Intercept + b_sigma_x * 0),
+    `x == 1` = exp(b_sigma_Intercept + b_sigma_x * 1)
+  ) %>%
+  gather(key, sd) %>%
+
   ggplot(aes(x = sd, y = key, fill = key)) +
-  stat_halfeye(point_interval = median_qi, .width = .95,
-               color = ghibli_palette("KikiMedium")[2]) +
+  stat_halfeye(
+    point_interval = median_qi,
+    .width = .95,
+    color = ghibli_palette("KikiMedium")[2]
+  ) +
   scale_fill_manual(values = c(ghibli_palette("KikiMedium")[c(4, 6)])) +
-  labs(subtitle = "Model-implied standard deviations by group",
-       x = expression(sigma[x]), 
-       y = NULL) +
+  labs(
+    subtitle = "Model-implied standard deviations by group",
+    x = expression(sigma[x]),
+    y = NULL
+  ) +
   coord_cartesian(ylim = c(1.5, 2)) +
-  theme(axis.ticks.y = element_blank(),
-        legend.position = "none",
-        panel.background = element_rect(fill = ghibli_palette("KikiMedium")[7]),
-        panel.grid = element_blank())
+  theme(
+    axis.ticks.y = element_blank(),
+    legend.position = "none",
+    panel.background = element_rect(fill = ghibli_palette("KikiMedium")[7]),
+    panel.grid = element_blank()
+  )
 ```
 
 And if we looked back at the data, those $\textit{SD}$ estimates are just what we'd expect.
 
-```{r, message = F}
-d %>% 
-  group_by(x) %>% 
-  summarise(sd = sd(y) %>% round(digits = 1)) 
+```{r}
+#| message: false
+
+d %>%
+  group_by(x) %>%
+  summarise(sd = sd(y) %>% round(digits = 1))
 ```
 
 For more on models like this, check out Christakis's blog post, [*2014: What scientific idea is ready for retirement?*](https://www.edge.org/response-detail/25437), or his paper with Subramanian and Kim, [*The "average" treatment effect: A construct ripe for retirement. A commentary on Deaton and Cartwright*](http://humannaturelab.net/publications/the-average-treatment-effect-a-construct-ripe-for-retirement-a-commentary-on-deaton-and-cartwright), [@subramanianAverageTreatmentEffect2018a]. Kruschke covered modeling $\sigma$ a bit in his [-@kruschkeDoingBayesianData2015] [*Doing Bayesian data analysis, second edition: A tutorial with R, JAGS, and Stan*](https://sites.google.com/site/doingbayesiandataanalysis/), my [-@kurzDoingBayesianDataAnalysis2026] translation for which lives [here](https://solomon.quarto.pub/dbda2/). Finally, this is foreshadowing a bit because it requires the multilevel model (see @sec-Multilevel-Models and @sec-Adventures-in-Covariance), but you might also check out the [-@williamsBayesianMultivariateMixedeffects2021] article by Williams, Liu, Martin, and Rast, [*Bayesian multivariate mixed-effects location scale modeling of longitudinal relations among affective traits, states, and physical activity*](https://doi.org/10.1027/1015-5759/a000624) or Williams's blog post, [*A defining feature of cognitive interference tasks: Heterogeneous within-person variance*](https://rstudio-pubs-static.s3.amazonaws.com/593838_838639e42b1643df9886a26cb922ab05.html).
@@ -742,40 +904,54 @@ But getting back to the text,
 >
 > The impact of this assumption can be seen in [our version of] Figure 9.8. (pp. 286—287)
 
-```{r, fig.width = 6, fig.height = 2.5, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+#| fig-width: 6
+#| fig-height: 2.5
+
 # first, we'll make data that'll be make the horizontal lines
 alpha <- 0
-beta  <- 2
+beta <- 2
 
-lines <- tibble(`log-measurement`      = -3:3,
-                `original measurement` = exp(-3:3))
+lines <- tibble(`log-measurement` = -3:3, `original measurement` = exp(-3:3))
 
 # now we're ready to make the primary data
-d <- tibble(x = seq(from = -1.5, to = 1.5, length.out = 50)) %>% 
-  mutate(`log-measurement`      = alpha + x * beta,
-         `original measurement` = exp(alpha + x * beta)) 
+d <- tibble(x = seq(from = -1.5, to = 1.5, length.out = 50)) %>%
+  mutate(
+    `log-measurement` = alpha + x * beta,
+    `original measurement` = exp(alpha + x * beta)
+  )
 
 # now we make the individual plots
-p1 <- d %>% 
+p1 <- d %>%
   ggplot(aes(x = x, y = `log-measurement`)) +
-  geom_hline(data = lines,
-             aes(yintercept = `log-measurement`),
-             color = ghibli_palette("YesterdayMedium")[6]) +
+  geom_hline(
+    data = lines,
+    aes(yintercept = `log-measurement`),
+    color = ghibli_palette("YesterdayMedium")[6]
+  ) +
   geom_line(linewidth = 1.5, color = ghibli_palette("YesterdayMedium")[3]) +
   coord_cartesian(xlim = c(-1, 1)) +
-  theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("YesterdayMedium")[5]))
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("YesterdayMedium")[5])
+  )
 
-p2 <- d %>% 
+p2 <- d %>%
   ggplot(aes(x = x, y = `original measurement`)) +
-  geom_hline(data = lines,
-             aes(yintercept = `original measurement`),
-             color = ghibli_palette("YesterdayMedium")[6]) +
+  geom_hline(
+    data = lines,
+    aes(yintercept = `original measurement`),
+    color = ghibli_palette("YesterdayMedium")[6]
+  ) +
   geom_line(linewidth = 1.5, color = ghibli_palette("YesterdayMedium")[3]) +
   scale_y_continuous(position = "right", limits = c(0, 10)) +
   coord_cartesian(xlim = c(-1, 1)) +
-  theme(panel.grid = element_blank(),
-        panel.background = element_rect(fill = ghibli_palette("YesterdayMedium")[7]))
+  theme(
+    panel.grid = element_blank(),
+    panel.background = element_rect(fill = ghibli_palette("YesterdayMedium")[7])
+  )
 
 # combine the ggplots
 p1 | p2
@@ -791,11 +967,10 @@ Within the context of GLMs with non-identity link functions,
 
 This will make more sense after we start playing around with logistic regression, count regression, and so on. For now, just file it away.
 
-## Session info {-}
+## Session info {.unnumbered}
 
 ```{r}
 sessionInfo()
 ```
 
-## Comments {-}
-
+## Comments {.unnumbered}

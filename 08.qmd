@@ -6,25 +6,32 @@
 
 Here we simulate King Markov's journey. In this version of the code, we've added `set.seed()`, which helps make the exact results reproducible.
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 library(tidyverse)
 
 set.seed(8)
 
 num_weeks <- 1e5
 positions <- rep(0, num_weeks)
-current   <- 10
+current <- 10
 for (i in 1:num_weeks) {
   # record current position
   positions[i] <- current
   # flip coin to generate proposal
   proposal <- current + sample(c(-1, 1), size = 1)
   # now make sure he loops around the archipelago
-  if (proposal < 1) proposal <- 10
-  if (proposal > 10) proposal <- 1
+  if (proposal < 1) {
+    proposal <- 10
+  }
+  if (proposal > 10) {
+    proposal <- 1
+  }
   # move?
   prob_move <- proposal / current
-  current   <- ifelse(runif(1) < prob_move, proposal, current)
+  current <- ifelse(runif(1) < prob_move, proposal, current)
 }
 ```
 
@@ -62,33 +69,43 @@ pomological_palette <- ggpomological:::pomological_palette
 
 Figure 8.2.a.
 
-```{r, fig.width = 5.5, fig.height = 4.75, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+#| fig-width: 5.5
+#| fig-height: 4.75
+
 library(tidyverse)
 
-tibble(week   = 1:1e5,
-       island = positions) %>%
+tibble(week = 1:1e5, island = positions) %>%
 
   ggplot(aes(x = week, y = island)) +
   geom_point(color = pomological_palette[1], shape = 1) +
   scale_x_continuous(breaks = seq(from = 0, to = 100, by = 20)) +
   scale_y_continuous(breaks = seq(from = 0, to = 10, by = 2)) +
   coord_cartesian(xlim = c(0, 100)) +
-  labs(title    = "Behold: The Metropolis algorithm in action!",
-       subtitle = "The dots show the king's path over the first 100 weeks.") +
+  labs(
+    title = "Behold: The Metropolis algorithm in action!",
+    subtitle = "The dots show the king's path over the first 100 weeks."
+  ) +
   theme_pomological_fancy(base_family = "Marck Script")
 ```
 
 Figure 8.2.b.
 
-```{r, fig.width = 5.5, fig.height = 4.75}
-tibble(week   = 1:1e5,
-       island = positions) %>%
+```{r}
+#| fig-width: 5.5
+#| fig-height: 4.75
+
+tibble(week = 1:1e5, island = positions) %>%
   mutate(island = factor(island)) %>%
 
   ggplot(aes(x = island)) +
   geom_bar(fill = pomological_palette[2]) +
-  labs(title    = "Old Metropolis shines in the long run.",
-       subtitle = "Sure enough, the time the king spent on each island was\nproportional to its population size.") +
+  labs(
+    title = "Old Metropolis shines in the long run.",
+    subtitle = "Sure enough, the time the king spent on each island was\nproportional to its population size."
+  ) +
   theme_pomological_fancy(base_family = "Marck Script")
 ```
 
@@ -112,7 +129,10 @@ Much like McElreath's rethinking package, brms provides a convenient interface t
 
 Here we load the `rugged` data.
 
-```{r, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+
 library(rethinking)
 data(rugged)
 d <- rugged
@@ -120,13 +140,16 @@ d <- rugged
 
 Switch from rethinking to brms.
 
-```{r, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+
 detach(package:rethinking)
 library(brms)
 rm(rugged)
 ```
 
-It takes just a sec to do a little data manipulation. 
+It takes just a sec to do a little data manipulation.
 
 ```{r}
 d <- d %>%
@@ -142,7 +165,9 @@ In the context of this chapter, it doesn't make sense to translate McElreath's m
 
 When working with brms, you don't need to do the data processing McElreath did on pages 248 and 249. If you wanted to, however, here's how you might do it within the tidyverse.
 
-```{r, eval = F}
+```{r}
+#| eval: false
+
 dd.trim <- dd %>%
   select(log_gdp, rugged, cont_africa)
 
@@ -153,16 +178,21 @@ str(dd.trim)
 
 Finally, we get to work that sweet HMC via `brms::brm()`.
 
-```{r b8.1}
+```{r}
+#| label: b8.1
+
 b8.1 <- brm(
-  data = dd, 
+  data = dd,
   family = gaussian,
   log_gdp ~ 1 + rugged + cont_africa + rugged:cont_africa,
-  prior = c(prior(normal(0, 100), class = Intercept),
-            prior(normal(0, 10), class = b),
-            prior(cauchy(0, 2), class = sigma)),
+  prior = c(
+    prior(normal(0, 100), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(cauchy(0, 2), class = sigma)
+  ),
   seed = 8,
-  file = "fits/b08.01")
+  file = "fits/b08.01"
+)
 ```
 
 Now we have officially ditched the uniform distribution for $\sigma$. Never again! Here's the posterior.
@@ -173,16 +203,19 @@ print(b8.1)
 
 Do note a couple things: If you look closely at the summary information at the top, you'll see that the `brm()` function defaults to `chains = 4`. If you check the manual, you'll see it also defaults to `cores = 1`, as well as `iter = 2000` and `warmup = 1000`. Also of note, McElreath's `rethinking::precis()` returns highest posterior density intervals (HPDIs) when summarizing `map2stan()` models. Not so with brms. If you want HPDIs, you'll have to use the convenience functions from the tidybayes package. Here's an example.
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 library(tidybayes)
 
 post <- as_draws_df(b8.1)
 
-post %>% 
-  select(b_Intercept:sigma) %>% 
-  gather() %>% 
-  group_by(key) %>% 
-  mean_hdi(value, .width = .89)  # note our rare use of 89% intervals
+post %>%
+  select(b_Intercept:sigma) %>%
+  gather() %>%
+  group_by(key) %>%
+  mean_hdi(value, .width = .89) # note our rare use of 89% intervals
 ```
 
 There's one more important difference in our brms summary output compared to McElreath's `rethinking::precis()` output. In the text we learn `precis()` returns `n_eff` values for each parameter. Earlier versions of brms used to have a direct analogue named `Eff.Sample`. Both were estimates of the effective number of samples (a.k.a. the effective sample size) for each parameter. As with typical sample size, the more the merrier. Starting with version 2.10.0, brms now returns two columns: `Bulk_ESS` and `Tail_ESS`. These originate from a [-@vehtariRanknormalizationFoldingLocalization2021] [paper](https://doi.org/10.1214/20-BA1221) by Stan-team all-stars Vehtari, Gelman, Simpson, Carpenter, and Bürkner. From their paper, we read:
@@ -195,12 +228,15 @@ For more technical details, see the paper. In short, `Bulk_ESS` in the output fr
 
 Here we sample in parallel by adding `cores = 4`.
 
-```{r b8.1b}
+```{r}
+#| label: b8.1b
+
 b8.1b <- update(
-  b8.1, 
+  b8.1,
   cores = 4,
   seed = 8,
-  file = "fits/b08.01b")
+  file = "fits/b08.01b"
+)
 ```
 
 This model sampled so fast that it really didn't matter if we sampled in parallel or not. It will for others.
@@ -222,18 +258,27 @@ Though we won't be doing so in this ebook, you could instead use the `as_draws()
 
 As with McElreath's rethinking, brms allows users to put the `post` data frame or the brmsfit object directly in `pairs()`.
 
-```{r, fig.width = 6, fig.height = 5}
-pairs(b8.1,
-      off_diag_args = list(size = 1/5, alpha = 1/5))
+```{r}
+#| fig-width: 6
+#| fig-height: 5
+
+pairs(b8.1, off_diag_args = list(size = 1 / 5, alpha = 1 / 5))
 ```
 
 Another nice way to customize your pairs plot is with the [GGally package](https://cran.r-project.org/package=GGally).
 
-```{r, message = F}
+```{r}
+#| message: false
+
 library(GGally)
 ```
 
-```{r, fig.width = 7, fig.height = 6, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+#| fig-width: 7
+#| fig-height: 6
+
 post %>%
   select(b_Intercept:sigma) %>%
   ggpairs()
@@ -241,43 +286,53 @@ post %>%
 
 Since `GGally::ggpairs()` returns a ggplot2 object, you can customize it as you please.
 
-```{r, fig.width = 7, fig.height = 6, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+#| fig-width: 7
+#| fig-height: 6
+
 my_upper <- function(data, mapping, ...) {
-  
   # get the x and y data to use the other code
   x <- eval_data_col(data, mapping$x)
   y <- eval_data_col(data, mapping$y)
-  
-  r  <- unname(cor.test(x, y)$estimate)
+
+  r <- unname(cor.test(x, y)$estimate)
   rt <- format(r, digits = 2)[1]
   tt <- as.character(rt)
-  
+
   # plot the cor value
   ggally_text(
-    label = tt, 
+    label = tt,
     mapping = aes(),
     size = 4,
-    color = "grey20")
+    color = "grey20"
+  )
 }
 
 my_diag <- function(data, mapping, ...) {
-  ggplot(data = data, mapping = mapping) + 
-    geom_density(fill = pomological_palette[7],
-                 color = pomological_palette[6])
+  ggplot(data = data, mapping = mapping) +
+    geom_density(fill = pomological_palette[7], color = pomological_palette[6])
 }
 
 my_lower <- function(data, mapping, ...) {
-  ggplot(data = data, mapping = mapping) + 
-    geom_point(color = pomological_palette[3],
-               shape = 1, size = 1/2, alpha = 1/6)
-  }
+  ggplot(data = data, mapping = mapping) +
+    geom_point(
+      color = pomological_palette[3],
+      shape = 1,
+      size = 1 / 2,
+      alpha = 1 / 6
+    )
+}
 
 post %>%
   select(b_Intercept:sigma) %>%
 
-  ggpairs(upper = list(continuous = my_upper),
-          diag  = list(continuous = my_diag),
-          lower = list(continuous = my_lower)) +
+  ggpairs(
+    upper = list(continuous = my_upper),
+    diag = list(continuous = my_diag),
+    lower = list(continuous = my_lower)
+  ) +
   labs(subtitle = "My custom pairs plot") +
   theme_pomological_fancy(base_family = "Marck Script") +
   theme(strip.text = element_text(size = 11))
@@ -337,21 +392,31 @@ To learn more about the $\text{elpd}$, read the rest of the paper and the [other
 
 Using `plot()` for a `brm()` fit returns both density and trace lots for the parameters.
 
-```{r, fig.width = 8, fig.height = 6}
+```{r}
+#| fig-width: 8
+#| fig-height: 6
+
 plot(b8.1, widths = c(2, 3))
 ```
 
 The [bayesplot](https://cran.r-project.org/package=bayesplot) package allows a little more control. Here, we use bayesplot's `mcmc_trace()` to show only trace plots with our custom theme. Note that `mcmc_trace()` works with data frames, not brmfit objects.
 
-```{r, fig.width = 8, fig.height = 4, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+#| fig-width: 8
+#| fig-height: 4
+
 library(bayesplot)
 
 post <- as_draws_df(b8.1)
 
-mcmc_trace(post, 
-           pars = vars(b_Intercept:sigma),
-           facet_args = list(ncol = 3), 
-           linewidth = 0.15) +
+mcmc_trace(
+  post,
+  pars = vars(b_Intercept:sigma),
+  facet_args = list(ncol = 3),
+  linewidth = 0.15
+) +
   scale_color_pomological() +
   labs(title = "My custom trace plots") +
   theme_pomological_fancy(base_family = "Marck Script") +
@@ -360,45 +425,64 @@ mcmc_trace(post,
 
 The bayesplot package offers a variety of diagnostic plots. Here we make autocorrelation plots for all model parameters, one for each HMC chain.
 
-```{r, fig.width = 8, fig.height = 4.5}
-mcmc_acf(post, 
-         pars = vars(b_Intercept:sigma),
-         lags = 5) +
-  theme_pomological_fancy(base_family = "Marck Script") 
+```{r}
+#| fig-width: 8
+#| fig-height: 4.5
+
+mcmc_acf(post, pars = vars(b_Intercept:sigma), lags = 5) +
+  theme_pomological_fancy(base_family = "Marck Script")
 ```
 
 That's just what we like to see--nice L-shaped autocorrelation plots. Those are the kinds of shapes you'd expect when you have reasonably large effective samples.
 
 Before we move on, there's an important difference between the trace plots McElreath showed in the text and the ones we just made. McElreath's trace plots include the warmup iterations. Ours did not. That's why his $x$-axis values ranged from 1 to 2,000 and ours only ranged from 1 to 1,000. To my knowledge, neither the `brms::plot()` nor the `bayesplot::mcmc_trace()` functions support including warmups in their trace plots. One quick way to get them is with the [ggmcmc package](https://cran.rstudio.com/package=ggmcmc) [@R-ggmcmc; @fernandezGGMCMCAnalysisofMCMC2016].
 
-```{r, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+
 library(ggmcmc)
 ```
 
 The ggmcmc package has a variety of convenience functions for working with MCMC chains. The `ggs()` function extracts the posterior draws, including `warmup`, and arranges them in a tidy tibble.
 
-```{r, warning = F, message = F}
-ggs(b8.1) %>% 
+```{r}
+#| warning: false
+#| message: false
+
+ggs(b8.1) %>%
   str()
 ```
 
 With this in hand, we can now include those warmup draws in our trace plots. Here's how to do so without convenience functions like `bayesplot::mcmc_trace()`.
 
-```{r, fig.width = 8, fig.height = 4}
+```{r}
+#| fig-width: 8
+#| fig-height: 4
+
 ggs(b8.1) %>%
-  filter(Parameter != "lprior") %>% 
-  mutate(chain = factor(Chain)) %>% 
-  
+  filter(Parameter != "lprior") %>%
+  mutate(chain = factor(Chain)) %>%
+
   ggplot(aes(x = Iteration, y = value)) +
   # this marks off the warmups
-  annotate(geom = "rect", 
-           xmin = 0, xmax = 1000, ymin = -Inf, ymax = Inf,
-           fill = pomological_palette[9], alpha = 1/6, linewidth = 0) +
-  geom_line(aes(color = chain),
-            linewidth = 0.15) +
+  annotate(
+    geom = "rect",
+    xmin = 0,
+    xmax = 1000,
+    ymin = -Inf,
+    ymax = Inf,
+    fill = pomological_palette[9],
+    alpha = 1 / 6,
+    linewidth = 0
+  ) +
+  geom_line(aes(color = chain), linewidth = 0.15) +
   scale_color_pomological() +
-  labs(title = "My custom trace plots with warmups via ggmcmc::ggs()",
-       x = NULL, y = NULL) +
+  labs(
+    title = "My custom trace plots with warmups via ggmcmc::ggs()",
+    x = NULL,
+    y = NULL
+  ) +
   theme_pomological_fancy(base_family = "Marck Script") +
   theme(legend.position = c(.95, .22)) +
   facet_wrap(~Parameter, scales = "free_y")
@@ -406,21 +490,33 @@ ggs(b8.1) %>%
 
 Following brms defaults, we won't include warmup iterations in the trace plots for other models in this book. A nice thing about plots that do contain them, though, is they reveal how quickly our HMC chains transition away from their start values into the posterior. To get a better sense of this, let's make those trace plots once more, but this time zooming in on the first 100 iterations.
 
-```{r, fig.width = 8, fig.height = 4}
+```{r}
+#| fig-width: 8
+#| fig-height: 4
+
 ggs(b8.1) %>%
-  filter(Parameter != "lprior") %>% 
-  mutate(chain = factor(Chain)) %>% 
-  
+  filter(Parameter != "lprior") %>%
+  mutate(chain = factor(Chain)) %>%
+
   ggplot(aes(x = Iteration, y = value)) +
   # this marks off the warmups
-  annotate(geom = "rect", 
-           xmin = 0, xmax = 1000, ymin = -Inf, ymax = Inf,
-           fill = pomological_palette[9], alpha = 1/6, linewidth = 0) +
-  geom_line(aes(color = chain),
-            linewidth = 0.5) +
+  annotate(
+    geom = "rect",
+    xmin = 0,
+    xmax = 1000,
+    ymin = -Inf,
+    ymax = Inf,
+    fill = pomological_palette[9],
+    alpha = 1 / 6,
+    linewidth = 0
+  ) +
+  geom_line(aes(color = chain), linewidth = 0.5) +
   scale_color_pomological() +
-  labs(title = "My custom trace plots with warmups via ggmcmc::ggs()",
-       x = NULL, y = NULL) +
+  labs(
+    title = "My custom trace plots with warmups via ggmcmc::ggs()",
+    x = NULL,
+    y = NULL
+  ) +
   coord_cartesian(xlim = c(1, 100)) +
   theme_pomological_fancy(base_family = "Marck Script") +
   theme(legend.position = c(.95, .22)) +
@@ -471,30 +567,40 @@ For more on these topics, you might also check out Gabry and Modrák's [-@gabryV
 
 As with rethinking, brms can take data in the form of a list. Recall however, that in order to specify starting values, you need to specify a list of lists with an `init` argument rather than with `start`.
 
-```{r b8.2}
+```{r}
+#| label: b8.2
+
 b8.2 <- brm(
-  data = list(y = c(-1, 1)), 
+  data = list(y = c(-1, 1)),
   family = gaussian,
   y ~ 1,
-  prior = c(prior(uniform(-1e10, 1e10), class = Intercept),
-            prior(uniform(0, 1e10), class = sigma, ub = 1e10)),
-  init = list(list(Intercept = 0, sigma = 1),
-              list(Intercept = 0, sigma = 1)),
-  iter = 4000, warmup = 1000, chains = 2,
+  prior = c(
+    prior(uniform(-1e10, 1e10), class = Intercept),
+    prior(uniform(0, 1e10), class = sigma, ub = 1e10)
+  ),
+  init = list(list(Intercept = 0, sigma = 1), list(Intercept = 0, sigma = 1)),
+  iter = 4000,
+  warmup = 1000,
+  chains = 2,
   seed = 8,
-  file = "fits/b08.02")
+  file = "fits/b08.02"
+)
 ```
 
 Those were some silly flat priors. Check the damage.
 
-```{r, message = F, fig.width = 6.5, fig.height = 2.75}
+```{r}
+#| message: false
+#| fig-width: 6.5
+#| fig-height: 2.75
+
 post <- as_draws_df(b8.2)
 
-mcmc_trace(post,
-           pars = vars(b_Intercept:sigma),
-           size = 0.5) +
-  labs(title = "My version of Figure 8.5.a.",
-       subtitle = "These trace plots do not look like the fuzzy caterpillars\nwe usually hope for.") +
+mcmc_trace(post, pars = vars(b_Intercept:sigma), size = 0.5) +
+  labs(
+    title = "My version of Figure 8.5.a.",
+    subtitle = "These trace plots do not look like the fuzzy caterpillars\nwe usually hope for."
+  ) +
   scale_color_pomological() +
   theme_pomological_fancy(base_family = "Marck Script") +
   theme(legend.position = "none")
@@ -508,18 +614,24 @@ print(b8.2)
 
 Holy smokes, those parameters are a mess! Plus we got nasty warning messages, too. Watch our reasonable priors save the day.
 
-```{r b8.3}
+```{r}
+#| label: b8.3
+
 b8.3 <- brm(
-  data = list(y = c(-1, 1)), 
+  data = list(y = c(-1, 1)),
   family = gaussian,
   y ~ 1,
-  prior = c(prior(normal(0, 10), class = Intercept),
-            prior(cauchy(0, 1), class = sigma)),
-  init = list(list(Intercept = 0, sigma = 1),
-              list(Intercept = 0, sigma = 1)),
-  iter = 4000, warmup = 1000, chains = 2,
+  prior = c(
+    prior(normal(0, 10), class = Intercept),
+    prior(cauchy(0, 1), class = sigma)
+  ),
+  init = list(list(Intercept = 0, sigma = 1), list(Intercept = 0, sigma = 1)),
+  iter = 4000,
+  warmup = 1000,
+  chains = 2,
   seed = 8,
-  file = "fits/b08.03")
+  file = "fits/b08.03"
+)
 ```
 
 ```{r}
@@ -528,14 +640,18 @@ print(b8.3)
 
 As in the text, no more warning signs and no more silly estimates. The trace plots look great, too.
 
-```{r, message = F, fig.width = 6.5, fig.height = 2.75}
+```{r}
+#| message: false
+#| fig-width: 6.5
+#| fig-height: 2.75
+
 post <- as_draws_df(b8.3)
 
-mcmc_trace(post,
-           pars = vars(b_Intercept:sigma),
-           size = 0.5) +
-  labs(title = "My version of Figure 8.5.b",
-       subtitle = "Oh man. This looks so much better.") +
+mcmc_trace(post, pars = vars(b_Intercept:sigma), size = 0.5) +
+  labs(
+    title = "My version of Figure 8.5.b",
+    subtitle = "Oh man. This looks so much better."
+  ) +
   scale_color_pomological() +
   theme_pomological_fancy(base_family = "Marck Script") +
   theme(legend.position = "none")
@@ -543,31 +659,43 @@ mcmc_trace(post,
 
 Now behold our version of Figure 8.6.
 
-```{r, fig.height = 4.0, fig.width = 7.25, warning = F}
+```{r}
+#| warning: false
+#| fig-height: 4.0
+#| fig-width: 7.25
+
 # left
 p1 <- post %>%
   select(b_Intercept) %>%
-  
+
   ggplot(aes(x = b_Intercept)) +
   stat_density(geom = "line") +
-  geom_line(data = data.frame(x = seq(from = min(post$b_Intercept),
-                                      to = max(post$b_Intercept),
-                                      length.out = 50)),
-            aes(x = x, y = dnorm(x = x, mean = 0, sd = 10)),
-            color = pomological_palette[5], linetype = 2) +
+  geom_line(
+    data = data.frame(
+      x = seq(
+        from = min(post$b_Intercept),
+        to = max(post$b_Intercept),
+        length.out = 50
+      )
+    ),
+    aes(x = x, y = dnorm(x = x, mean = 0, sd = 10)),
+    color = pomological_palette[5],
+    linetype = 2
+  ) +
   theme_pomological_fancy(base_family = "Marck Script")
 
 # right
 p2 <- post %>%
   select(sigma) %>%
-  
+
   ggplot(aes(x = sigma)) +
   stat_density(geom = "line") +
-  geom_line(data = data.frame(x = seq(from = 0,
-                                      to = max(post$sigma),
-                                      length.out = 50)),
-            aes(x = x, y = dcauchy(x = x, location = 0, scale = 1)*2),
-            color = pomological_palette[9], linetype = 2) +
+  geom_line(
+    data = data.frame(x = seq(from = 0, to = max(post$sigma), length.out = 50)),
+    aes(x = x, y = dcauchy(x = x, location = 0, scale = 1) * 2),
+    color = pomological_palette[9],
+    linetype = 2
+  ) +
   coord_cartesian(xlim = c(0, 10)) +
   ylab(NULL) +
   theme_pomological_fancy(base_family = "Marck Script")
@@ -575,10 +703,13 @@ p2 <- post %>%
 # combine the two
 library(patchwork)
 
-p1 + p2 + plot_annotation(
-  title = "Prior (dashed) and posterior (solid) distributions for the\nmodel with weakly-informative priors, b8.3",
-  theme = theme_pomological_fancy(base_family = "Marck Script"))
-```  
+p1 +
+  p2 +
+  plot_annotation(
+    title = "Prior (dashed) and posterior (solid) distributions for the\nmodel with weakly-informative priors, b8.3",
+    theme = theme_pomological_fancy(base_family = "Marck Script")
+  )
+```
 
 #### Overthinking: Cauchy distribution
 
@@ -588,14 +719,19 @@ $$p(x \mid x_0, \gamma) = \left ( \pi \gamma \left [ 1 + \left ( \frac{x - x_0}{
 
 The Cauchy has no mean and variance, but $x_0$ is the location and $\gamma$ is the scale. Here's our version of the simulation. Note our use of the `cummean()` function.
 
-```{r, fig.height = 3, fig.width = 4}
+```{r}
+#| fig-height: 3
+#| fig-width: 4
+
 n <- 1e4
 
 set.seed(8)
-tibble(y     = rcauchy(n, location = 0, scale = 5),
-       mu    = cummean(y),
-       index = 1:n) %>% 
-  
+tibble(
+  y = rcauchy(n, location = 0, scale = 5),
+  mu = cummean(y),
+  index = 1:n
+) %>%
+
   ggplot(aes(x = index, y = mu)) +
   geom_line() +
   theme_pomological_fancy(base_family = "Marck Script")
@@ -603,24 +739,29 @@ tibble(y     = rcauchy(n, location = 0, scale = 5),
 
 The whole thing is quite remarkable. Just for kicks, here we do it again with nine simulations.
 
-```{r, fig.height = 5, fig.width = 8}
+```{r}
+#| fig-height: 5
+#| fig-width: 8
+
 n <- 1e4
 
 set.seed(8)
-tibble(a = rcauchy(n, location = 0, scale = 5),
-       b = rcauchy(n, location = 0, scale = 5),
-       c = rcauchy(n, location = 0, scale = 5),
-       d = rcauchy(n, location = 0, scale = 5),
-       e = rcauchy(n, location = 0, scale = 5),
-       f = rcauchy(n, location = 0, scale = 5),
-       g = rcauchy(n, location = 0, scale = 5),
-       h = rcauchy(n, location = 0, scale = 5),
-       i = rcauchy(n, location = 0, scale = 5)) %>% 
-  gather() %>% 
-  group_by(key) %>% 
-  mutate(mu = cummean(value)) %>% 
-  ungroup() %>% 
-  mutate(index = rep(1:n, times = 9)) %>% 
+tibble(
+  a = rcauchy(n, location = 0, scale = 5),
+  b = rcauchy(n, location = 0, scale = 5),
+  c = rcauchy(n, location = 0, scale = 5),
+  d = rcauchy(n, location = 0, scale = 5),
+  e = rcauchy(n, location = 0, scale = 5),
+  f = rcauchy(n, location = 0, scale = 5),
+  g = rcauchy(n, location = 0, scale = 5),
+  h = rcauchy(n, location = 0, scale = 5),
+  i = rcauchy(n, location = 0, scale = 5)
+) %>%
+  gather() %>%
+  group_by(key) %>%
+  mutate(mu = cummean(value)) %>%
+  ungroup() %>%
+  mutate(index = rep(1:n, times = 9)) %>%
 
   ggplot(aes(x = index, y = mu)) +
   geom_line(aes(color = key)) +
@@ -640,20 +781,27 @@ set.seed(8)
 y <- rnorm(100, mean = 0, sd = 1)
 ```
 
-```{r b8.4}
+```{r}
+#| label: b8.4
+
 b8.4 <- brm(
-  data = list(y           = y,
-              intercept_1 = 1,
-              intercept_2 = 1), 
+  data = list(y = y, intercept_1 = 1, intercept_2 = 1),
   family = gaussian,
   y ~ 0 + intercept_1 + intercept_2,
-  prior = c(prior(uniform(-1e10, 1e10), class = b),
-            prior(cauchy(0, 1), class = sigma)),
-  init = list(list(intercept_1 = 0, intercept_2 = 0, sigma = 1),
-              list(intercept_1 = 0, intercept_2 = 0, sigma = 1)),
-  iter = 4000, warmup = 1000, chains = 2,
+  prior = c(
+    prior(uniform(-1e10, 1e10), class = b),
+    prior(cauchy(0, 1), class = sigma)
+  ),
+  init = list(
+    list(intercept_1 = 0, intercept_2 = 0, sigma = 1),
+    list(intercept_1 = 0, intercept_2 = 0, sigma = 1)
+  ),
+  iter = 4000,
+  warmup = 1000,
+  chains = 2,
   seed = 8,
-  file = "fits/b08.04")
+  file = "fits/b08.04"
+)
 ```
 
 Our model results don't perfectly mirror McElreath's, but they're identical in spirit.
@@ -664,20 +812,27 @@ print(b8.4)
 
 Note the frightening warning message. Those results are a mess! Let's try again.
 
-```{r b8.5}
+```{r}
+#| label: b8.5
+
 b8.5 <- brm(
-  data = list(y           = y,
-              intercept_1 = 1,
-              intercept_2 = 1),
+  data = list(y = y, intercept_1 = 1, intercept_2 = 1),
   family = gaussian,
   y ~ 0 + intercept_1 + intercept_2,
-  prior = c(prior(normal(0, 10), class = b),
-            prior(cauchy(0, 1), class = sigma)),
-  init = list(list(intercept_1 = 0, intercept_2 = 0, sigma = 1),
-              list(intercept_1 = 0, intercept_2 = 0, sigma = 1)),
-  iter = 4000, warmup = 1000, chains = 2,
+  prior = c(
+    prior(normal(0, 10), class = b),
+    prior(cauchy(0, 1), class = sigma)
+  ),
+  init = list(
+    list(intercept_1 = 0, intercept_2 = 0, sigma = 1),
+    list(intercept_1 = 0, intercept_2 = 0, sigma = 1)
+  ),
+  iter = 4000,
+  warmup = 1000,
+  chains = 2,
   seed = 8,
-  file = "fits/b08.05")
+  file = "fits/b08.05"
+)
 ```
 
 ```{r}
@@ -686,43 +841,52 @@ print(b8.5)
 
 Much better. For our version of Figure 8.7, we'll make the trace plots for the two models separately and combine them with patchwork.
 
-```{r, fig.width = 7, fig.height = 6, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+#| fig-width: 7
+#| fig-height: 6
+
 post <- as_draws_df(b8.4)
 
-p1 <- mcmc_trace(post,
-                 pars = vars(b_intercept_1:sigma),
-                 size = 0.33,
-                 facet_args = c(ncol = 1)) +
+p1 <- mcmc_trace(
+  post,
+  pars = vars(b_intercept_1:sigma),
+  size = 0.33,
+  facet_args = c(ncol = 1)
+) +
   scale_color_pomological() +
   labs(subtitle = "flat priors") +
   theme_pomological_fancy(base_family = "Marck Script") +
-  theme(legend.position = "none",
-        strip.text = element_text(size = 10))
+  theme(legend.position = "none", strip.text = element_text(size = 10))
 
 post <- as_draws_df(b8.5)
 
-p2 <- mcmc_trace(post,
-                 pars = vars(b_intercept_1:sigma),
-                 size = 0.33,
-                 facet_args = c(ncol = 1)) +
+p2 <- mcmc_trace(
+  post,
+  pars = vars(b_intercept_1:sigma),
+  size = 0.33,
+  facet_args = c(ncol = 1)
+) +
   scale_color_pomological() +
   labs(subtitle = "weakly-informative priors") +
   theme_pomological_fancy(base_family = "Marck Script") +
-  theme(legend.position = "none",
-        strip.text = element_text(size = 10))
+  theme(legend.position = "none", strip.text = element_text(size = 10))
 
-p1 + p2 + plot_annotation(
-  title = "Prior strength matters",
-  theme = theme_pomological_fancy(base_family = "Marck Script"))
+p1 +
+  p2 +
+  plot_annotation(
+    title = "Prior strength matters",
+    theme = theme_pomological_fancy(base_family = "Marck Script")
+  )
 ```
 
 The central message in the text, default to weakly-regularizing priors, holds for brms just as it does in rethinking. For more on the topic, see the [recommendations from the Stan team](https://github.com/stan-dev/stan/wiki/Prior-Choice-Recommendations). If you want to dive deeper, check out [Simpson's post on Gelman's blog](https://statmodeling.stat.columbia.edu/2017/09/05/never-total-eclipse-prior/) and their corresponding [-@gelmanPriorCanOften2017] paper with Betancourt, [*The prior can often only be understood in the context of the likelihood*](https://doi.org/10.3390/e19100555)
 
-## Session info {-}
+## Session info {.unnumbered}
 
 ```{r}
 sessionInfo()
 ```
 
-## Comments {-}
-
+## Comments {.unnumbered}

@@ -12,21 +12,23 @@ After laying out his soccer field coin toss shuffle premise, McElreath wrote:
 
 Here's a way to do the simulation necessary for the plot in the top panel of Figure 4.2.
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 library(tidyverse)
 
 # we set the seed to make the results of `runif()` reproducible.
 set.seed(4)
 
 # make data with 100 people, 16 steps each with a starting point of `step == 0` (i.e., 17 rows per person)
-pos <- crossing(person = 1:100,
-                step   = 0:16) %>% 
+pos <- crossing(person = 1:100, step = 0:16) %>%
   # for all steps above `step == 0` simulate a `deviation`
-  mutate(deviation = map_dbl(step, ~if_else(. == 0, 0, runif(1, -1, 1)))) %>% 
+  mutate(deviation = map_dbl(step, ~ if_else(. == 0, 0, runif(1, -1, 1)))) %>%
   # after grouping by `person`, compute the cumulative sum of the deviations, then `ungroup()`
   group_by(person) %>%
-  mutate(position = cumsum(deviation)) %>% 
-  ungroup() 
+  mutate(position = cumsum(deviation)) %>%
+  ungroup()
 ```
 
 That `map_dbl()` code within the first `mutate()` line might look odd. Go [here](https://purrr.tidyverse.org/reference/map.html) to learn more about iterating with `purrr::map_dbl()`.
@@ -39,20 +41,25 @@ glimpse(pos)
 
 Here's the actual plot code.
 
-```{r, fig.height = 2, fig.width = 6.4}
-ggplot(data = pos, 
-       aes(x = step, y = position, group = person)) +
+```{r}
+#| fig-height: 2
+#| fig-width: 6.4
+
+ggplot(data = pos, aes(x = step, y = position, group = person)) +
   geom_vline(xintercept = c(4, 8, 16), linetype = 2) +
-  geom_line(aes(color = person < 2, alpha  = person < 2)) +
+  geom_line(aes(color = person < 2, alpha = person < 2)) +
   scale_color_manual(values = c("skyblue4", "black")) +
-  scale_alpha_manual(values = c(1/5, 1)) +
+  scale_alpha_manual(values = c(1 / 5, 1)) +
   scale_x_continuous("step number", breaks = c(0, 4, 8, 12, 16)) +
   theme(legend.position = "none")
 ```
 
 Now here's the code for the bottom three plots of Figure 4.2.
 
-```{r, fig.width = 8, fig.height = 2.75}
+```{r}
+#| fig-width: 8
+#| fig-height: 2.75
+
 # Figure 4.2.a.
 p1 <- pos %>%
   filter(step == 4) %>%
@@ -78,13 +85,14 @@ pos %>%
 p3 <- pos %>%
   filter(step == 16) %>%
   ggplot(aes(x = position)) +
-  stat_function(fun = dnorm, 
-                args = list(mean = 0, sd = 2.180408),
-                linetype = 2) +  # 2.180408 came from the previous code block
-  geom_density(color = "transparent", fill = "dodgerblue3", alpha = 1/2) +
+  stat_function(
+    fun = dnorm,
+    args = list(mean = 0, sd = 2.180408),
+    linetype = 2
+  ) + # 2.180408 came from the previous code block
+  geom_density(color = "transparent", fill = "dodgerblue3", alpha = 1 / 2) +
   coord_cartesian(xlim = c(-6, 6)) +
-  labs(title = "16 steps",
-       y = "density")
+  labs(title = "16 steps", y = "density")
 
 library(patchwork)
 
@@ -109,15 +117,17 @@ In the `runif()` part of that code, we generated 12 random draws from the unifor
 
 ```{r}
 set.seed(4)
-tibble(a = 1,
-       b = runif(12, 0, 0.1)) %>% 
-  mutate(c = a + b) %>% 
+tibble(a = 1, b = runif(12, 0, 0.1)) %>%
+  mutate(c = a + b) %>%
   summarise(p = prod(c))
 ```
 
 Same result. Rather than using base R `replicate()` to do this many times, let's practice with `purrr::map_dbl()` like before.
 
-```{r, fig.width = 3.25, fig.height = 3}
+```{r}
+#| fig-width: 3.25
+#| fig-height: 3
+
 set.seed(4)
 growth <- tibble(growth = map_dbl(1:10000, ~ prod(1 + runif(12, 0, 0.1))))
 
@@ -127,20 +137,25 @@ ggplot(data = growth, aes(x = growth)) +
 
 "The smaller the effect of each locus, the better this additive approximation will be" (p. 74). Let's compare big and small.
 
-```{r, fig.width = 6, fig.height = 2.5}
+```{r}
+#| fig-width: 6
+#| fig-height: 2.5
+
 # simulate
 set.seed(4)
 
-samples <- tibble(big   = map_dbl(1:10000, ~ prod(1 + runif(12, 0, 0.5))),
-                  small = map_dbl(1:10000, ~ prod(1 + runif(12, 0, 0.01)))) %>% 
+samples <- tibble(
+  big = map_dbl(1:10000, ~ prod(1 + runif(12, 0, 0.5))),
+  small = map_dbl(1:10000, ~ prod(1 + runif(12, 0, 0.01)))
+) %>%
   # wrangle
-  gather(distribution, samples) 
+  gather(distribution, samples)
 
 # plot
-samples %>% 
+samples %>%
   ggplot(aes(x = samples)) +
   geom_density(fill = "black", color = "transparent") +
-  facet_wrap(~distribution, scales = "free") 
+  facet_wrap(~distribution, scales = "free")
 ```
 
 Yep, the `small` samples were more Gaussian.
@@ -149,21 +164,22 @@ Yep, the `small` samples were more Gaussian.
 
 Instead of saving our tibble, we'll just feed it directly into our plot.
 
-```{r, fig.width = 3.25, fig.height = 3}
+```{r}
+#| fig-width: 3.25
+#| fig-height: 3
+
 set.seed(4)
 
-tibble(samples = map_dbl(1:1e4, ~ log(prod(1 + runif(12, 0, 0.5))))) %>% 
+tibble(samples = map_dbl(1:1e4, ~ log(prod(1 + runif(12, 0, 0.5))))) %>%
   ggplot(aes(x = samples)) +
-  geom_density(color = "transparent", 
-               fill = "gray33")
+  geom_density(color = "transparent", fill = "gray33")
 ```
 
-What we did was really compact. Walking it out a bit, here's what we all did within the second argument within `map_dbl()` (i.e., everything within `log()`). 
+What we did was really compact. Walking it out a bit, here's what we all did within the second argument within `map_dbl()` (i.e., everything within `log()`).
 
 ```{r}
-tibble(a = runif(12, 0, 0.5),
-       b = 1) %>% 
-  mutate(c = a + b) %>% 
+tibble(a = runif(12, 0, 0.5), b = 1) %>%
+  mutate(c = a + b) %>%
   summarise(p = prod(c) %>% log())
 ```
 
@@ -197,18 +213,21 @@ $$p(y \mid \mu, \sigma) = \frac{1}{\sqrt{2 \pi \sigma^2}} \exp \left (- \frac{(y
 
 McElreath's right. "This looks monstrous" (p. 76). Why not demystify that monster with a little R code? For simplicity, we'll look at $p(y)$ over a series of $y$ values ranging from -4 to 4, holding $\mu = 0$ and $\sigma = 1$. Then we'll plot.
 
-```{r, fig.width = 4, fig.height = 2.75}
+```{r}
+#| fig-width: 4
+#| fig-height: 2.75
+
 # define our input values
-tibble(y     = seq(from = -4, to = 4, by = .1),
-       mu    = 0,
-       sigma = 1) %>% 
+tibble(y = seq(from = -4, to = 4, by = .1), mu = 0, sigma = 1) %>%
   # compute p(y) using a hand-made Gaussian likelihood
-  mutate(p_y = (1 / sqrt(2 * pi * sigma^2)) * exp(-(y - mu)^2 / (2 * sigma^2))) %>% 
-  
+  mutate(
+    p_y = (1 / sqrt(2 * pi * sigma^2)) * exp(-(y - mu)^2 / (2 * sigma^2))
+  ) %>%
+
   # plot!
   ggplot(aes(x = y, y = p_y)) +
   geom_line() +
-  ylab(expression(italic(p)(italic("y|")*mu==0*","~sigma==1)))
+  ylab(expression(italic(p)(italic("y|") * mu == 0 * "," ~ sigma == 1)))
 ```
 
 You get the same results is you switch out that mutate line with `mutate(p_y = dnorm(y)) %>%`. To learn more, execute `?dnorm`.
@@ -241,11 +260,12 @@ We can break McElreath's R code 4.6 down a little bit with a tibble like so.
 # how many `p_grid` points would you like?
 n_points <- 100
 
-d <- tibble(p_grid = seq(from = 0, to = 1, length.out = n_points),
-            w      = 6, 
-            n      = 9) %>% 
-  mutate(prior      = dunif(p_grid, 0, 1),
-         likelihood = dbinom(w, n, p_grid)) %>% 
+d <- tibble(
+  p_grid = seq(from = 0, to = 1, length.out = n_points),
+  w = 6,
+  n = 9
+) %>%
+  mutate(prior = dunif(p_grid, 0, 1), likelihood = dbinom(w, n, p_grid)) %>%
   mutate(posterior = likelihood * prior / sum(likelihood * prior))
 
 head(d)
@@ -253,13 +273,16 @@ head(d)
 
 In case you were curious, here's what they look like.
 
-```{r, fig.width = 8, fig.height = 2.25}
-d %>% 
-  select(-w, -n) %>% 
-  gather(key, value, -p_grid) %>% 
+```{r}
+#| fig-width: 8
+#| fig-height: 2.25
+
+d %>%
+  select(-w, -n) %>%
+  gather(key, value, -p_grid) %>%
   # this line allows us to dictate the order the panels will appear in
-  mutate(key = factor(key, levels = c("prior", "likelihood", "posterior"))) %>% 
-  
+  mutate(key = factor(key, levels = c("prior", "likelihood", "posterior"))) %>%
+
   ggplot(aes(x = p_grid, y = value, fill = key)) +
   geom_area() +
   scale_fill_manual(values = c("blue", "red", "purple")) +
@@ -278,7 +301,10 @@ The posterior is a combination of the prior and the likelihood. When the prior i
 
 Let's get the Howell [-@howell2001demography; -@howell2010life] data from McElreath's [-@R-rethinking] [**rethinking** package](https://xcelab.net/rm/software/).
 
-```{r, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+
 library(rethinking)
 data(Howell1)
 d <- Howell1
@@ -286,7 +312,9 @@ d <- Howell1
 
 Here we open our main statistical package, Bürkner's [brms](https://github.com/paul-buerkner/brms). But before we do, we'll want to detach the rethinking package. R will not allow users to use a function from one package that shares the same name as a different function from another package if both packages are open at the same time. The rethinking and brms packages are designed for similar purposes and, unsurprisingly, overlap in the names of their functions. To prevent problems, it is a good idea to make sure rethinking is detached before using brms. To learn more on the topic, see [this R-bloggers post](https://www.r-bloggers.com/r-and-package-masking-a-real-life-example/).
 
-```{r, message = F}
+```{r}
+#| message: false
+
 rm(Howell1)
 detach(package:rethinking, unload = T)
 library(brms)
@@ -317,7 +345,7 @@ d2 <- d %>%
 There are a lot of ways we can make sure our `d2` has 352 rows. Here's one.
 
 ```{r}
-d2 %>% 
+d2 %>%
   count()
 ```
 
@@ -331,7 +359,7 @@ For more on indexing, check out [Chapter 9](https://bookdown.org/rdpeng/rprogdat
 
 ### The model
 
-The likelihood for our model is 
+The likelihood for our model is
 
 $$h_i \sim \operatorname{Normal}(\mu, \sigma),$$
 
@@ -345,16 +373,24 @@ $$\sigma \sim \operatorname{Uniform}(0, 50).$$
 
 Here's the shape of the prior for $\mu$ in $N(178, 20)$.
 
-```{r, fig.width = 3, fig.height = 2.5}
-ggplot(data = tibble(x = seq(from = 100, to = 250, by = .1)), 
-       aes(x = x, y = dnorm(x, mean = 178, sd = 20))) +
+```{r}
+#| fig-width: 3
+#| fig-height: 2.5
+
+ggplot(
+  data = tibble(x = seq(from = 100, to = 250, by = .1)),
+  aes(x = x, y = dnorm(x, mean = 178, sd = 20))
+) +
   geom_line() +
   ylab("density")
 ```
 
 And here's the ggplot2 code for our prior for $\sigma$, a uniform distribution with a minimum value of 0 and a maximum value of 50. We don't really need the y axis when looking at the shapes of a density, so we'll just remove it with `scale_y_continuous()`.
 
-```{r, fig.width = 3, fig.height = 2.5}
+```{r}
+#| fig-width: 3
+#| fig-height: 2.5
+
 tibble(x = seq(from = -10, to = 60, by = .1)) %>%
   ggplot(aes(x = x, y = dunif(x, min = 0, max = 50))) +
   geom_line() +
@@ -364,19 +400,28 @@ tibble(x = seq(from = -10, to = 60, by = .1)) %>%
 
 We can simulate from both priors at once to get a prior probability distribution of `heights`.
 
-```{r, fig.width = 3, fig.height = 2.5}
+```{r}
+#| fig-width: 3
+#| fig-height: 2.5
+
 n <- 1e4
 
 set.seed(4)
-tibble(sample_mu    = rnorm(n, mean = 178,       sd  = 20),
-       sample_sigma = runif(n, min  = 0,         max = 50)) %>% 
-  mutate(x = rnorm(n, mean = sample_mu, sd  = sample_sigma)) %>% 
-  
+tibble(
+  sample_mu = rnorm(n, mean = 178, sd = 20),
+  sample_sigma = runif(n, min = 0, max = 50)
+) %>%
+  mutate(x = rnorm(n, mean = sample_mu, sd = sample_sigma)) %>%
+
   ggplot(aes(x = x)) +
   geom_density(fill = "black", linewidth = 0) +
   scale_y_continuous(NULL, breaks = NULL) +
-  labs(subtitle = expression(Prior~predictive~distribution~"for"~italic(h[i])),
-       x = NULL) +
+  labs(
+    subtitle = expression(
+      Prior ~ predictive ~ distribution ~ "for" ~ italic(h[i])
+    ),
+    x = NULL
+  ) +
   theme(panel.grid = element_blank())
 ```
 
@@ -390,8 +435,10 @@ As McElreath explained, you'll never use the grid approximation approach for pra
 n <- 200
 
 # we'll accomplish with `tidyr::crossing()` what McElreath did with base R `expand.grid()`
-d_grid <- crossing(mu    = seq(from = 140, to = 160, length.out = n),
-                   sigma = seq(from = 4,   to = 9,   length.out = n))
+d_grid <- crossing(
+  mu = seq(from = 140, to = 160, length.out = n),
+  sigma = seq(from = 4, to = 9, length.out = n)
+)
 
 glimpse(d_grid)
 ```
@@ -400,7 +447,7 @@ glimpse(d_grid)
 
 ```{r}
 grid_function <- function(mu, sigma) {
-  dnorm(d2$height, mean = mu, sd = sigma, log = T) %>% 
+  dnorm(d2$height, mean = mu, sd = sigma, log = T) %>%
     sum()
 }
 ```
@@ -408,40 +455,44 @@ grid_function <- function(mu, sigma) {
 Now we're ready to complete the tibble.
 
 ```{r}
-d_grid <- d_grid %>% 
+d_grid <- d_grid %>%
   mutate(log_likelihood = map2(mu, sigma, grid_function)) %>%
-  unnest(log_likelihood) %>% 
-  mutate(prior_mu    = dnorm(mu,    mean = 178, sd  = 20, log = T),
-         prior_sigma = dunif(sigma, min  = 0,   max = 50, log = T)) %>% 
-  mutate(product = log_likelihood + prior_mu + prior_sigma) %>% 
+  unnest(log_likelihood) %>%
+  mutate(
+    prior_mu = dnorm(mu, mean = 178, sd = 20, log = T),
+    prior_sigma = dunif(sigma, min = 0, max = 50, log = T)
+  ) %>%
+  mutate(product = log_likelihood + prior_mu + prior_sigma) %>%
   mutate(probability = exp(product - max(product)))
-  
+
 head(d_grid)
 ```
 
 In the final `d_grid`, the `probability` vector contains the posterior probabilities across values of `mu` and `sigma`. We can make a contour plot with `geom_contour()`.
 
-```{r, fig.width = 4, fig.height = 3.5}
-d_grid %>% 
-  ggplot(aes(x = mu, y = sigma, z = probability)) + 
+```{r}
+#| fig-width: 4
+#| fig-height: 3.5
+
+d_grid %>%
+  ggplot(aes(x = mu, y = sigma, z = probability)) +
   geom_contour() +
-  labs(x = expression(mu),
-       y = expression(sigma)) +
-  coord_cartesian(xlim = range(d_grid$mu),
-                  ylim = range(d_grid$sigma)) +
+  labs(x = expression(mu), y = expression(sigma)) +
+  coord_cartesian(xlim = range(d_grid$mu), ylim = range(d_grid$sigma)) +
   theme(panel.grid = element_blank())
 ```
 
 We'll make our heat map with `geom_raster(aes(fill = probability))`.
 
-```{r, fig.width = 5, fig.height = 3.5}
-d_grid %>% 
-  ggplot(aes(x = mu, y = sigma)) + 
-  geom_raster(aes(fill = probability),
-              interpolate = T) +
+```{r}
+#| fig-width: 5
+#| fig-height: 3.5
+
+d_grid %>%
+  ggplot(aes(x = mu, y = sigma)) +
+  geom_raster(aes(fill = probability), interpolate = T) +
   scale_fill_viridis_c(option = "A") +
-  labs(x = expression(mu),
-       y = expression(sigma)) +
+  labs(x = expression(mu), y = expression(sigma)) +
   theme(panel.grid = element_blank())
 ```
 
@@ -449,28 +500,33 @@ d_grid %>%
 
 We can use `dplyr::sample_n()` to sample rows, with replacement, from `d_grid`.
 
-```{r, fig.width = 4, fig.height = 3.5}
+```{r}
+#| fig-width: 4
+#| fig-height: 3.5
+
 set.seed(4)
-d_grid_samples <- d_grid %>% 
+d_grid_samples <- d_grid %>%
   sample_n(size = 1e4, replace = T, weight = probability)
 
-d_grid_samples %>% 
-  ggplot(aes(x = mu, y = sigma)) + 
-  geom_point(size = 0.9, alpha = 1/15) +
+d_grid_samples %>%
+  ggplot(aes(x = mu, y = sigma)) +
+  geom_point(size = 0.9, alpha = 1 / 15) +
   scale_fill_viridis_c() +
-  labs(x = expression(mu[samples]),
-       y = expression(sigma[samples])) +
+  labs(x = expression(mu[samples]), y = expression(sigma[samples])) +
   theme(panel.grid = element_blank())
 ```
 
 We can use `gather()` and then `facet_warp()` to plot the densities for both `mu` and `sigma` at once.
 
-```{r, fig.width = 6, fig.height = 2.5}
-d_grid_samples %>% 
-  select(mu, sigma) %>% 
-  gather() %>% 
+```{r}
+#| fig-width: 6
+#| fig-height: 2.5
 
-  ggplot(aes(x = value)) + 
+d_grid_samples %>%
+  select(mu, sigma) %>%
+  gather() %>%
+
+  ggplot(aes(x = value)) +
   geom_density(fill = "grey33", linewidth = 0) +
   scale_y_continuous(NULL, breaks = NULL) +
   xlab(NULL) +
@@ -480,13 +536,16 @@ d_grid_samples %>%
 
 We'll use the tidybayes package to compute their posterior modes and 95% HDIs.
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 library(tidybayes)
 
-d_grid_samples %>% 
-  select(mu, sigma) %>% 
-  gather() %>% 
-  group_by(key) %>% 
+d_grid_samples %>%
+  select(mu, sigma) %>%
+  gather() %>%
+  group_by(key) %>%
   mode_hdi(value)
 ```
 
@@ -507,15 +566,17 @@ For our first step using `d3`, we'll redefine `d_grid`.
 n <- 200
 
 # note we've redefined the ranges of `mu` and `sigma`
-d_grid <- crossing(mu    = seq(from = 150, to = 170, length.out = n),
-                   sigma = seq(from = 4,   to = 20,  length.out = n))
+d_grid <- crossing(
+  mu = seq(from = 150, to = 170, length.out = n),
+  sigma = seq(from = 4, to = 20, length.out = n)
+)
 ```
 
 Second, we'll redefine our custom `grid_function()` function to operate over the `height` values of `d3`.
 
 ```{r}
 grid_function <- function(mu, sigma) {
-  dnorm(d3, mean = mu, sd = sigma, log = T) %>% 
+  dnorm(d3, mean = mu, sd = sigma, log = T) %>%
     sum()
 }
 ```
@@ -523,11 +584,13 @@ grid_function <- function(mu, sigma) {
 Now we'll use the amended `grid_function()` to make the posterior.
 
 ```{r}
-d_grid <- d_grid %>% 
-  mutate(log_likelihood = map2_dbl(mu, sigma, grid_function)) %>% 
-  mutate(prior_mu    = dnorm(mu,    mean = 178, sd  = 20, log = T),
-         prior_sigma = dunif(sigma, min  = 0,   max = 50, log = T)) %>% 
-  mutate(product = log_likelihood + prior_mu + prior_sigma) %>% 
+d_grid <- d_grid %>%
+  mutate(log_likelihood = map2_dbl(mu, sigma, grid_function)) %>%
+  mutate(
+    prior_mu = dnorm(mu, mean = 178, sd = 20, log = T),
+    prior_sigma = dunif(sigma, min = 0, max = 50, log = T)
+  ) %>%
+  mutate(product = log_likelihood + prior_mu + prior_sigma) %>%
   mutate(probability = exp(product - max(product)))
 ```
 
@@ -535,28 +598,33 @@ Did you catch our use of `purrr::map2_dbl()`, there, in place of `purrr::map2()`
 
 Next we'll `sample_n()` and plot.
 
-```{r, fig.width = 4, fig.height = 3.5}
+```{r}
+#| fig-width: 4
+#| fig-height: 3.5
+
 set.seed(4)
-d_grid_samples <- d_grid %>% 
+d_grid_samples <- d_grid %>%
   sample_n(size = 1e4, replace = T, weight = probability)
 
-d_grid_samples %>% 
-  ggplot(aes(x = mu, y = sigma)) + 
-  geom_point(size = 0.9, alpha = 1/15) +
+d_grid_samples %>%
+  ggplot(aes(x = mu, y = sigma)) +
+  geom_point(size = 0.9, alpha = 1 / 15) +
   scale_fill_viridis_c() +
-  labs(x = expression(mu[samples]),
-       y = expression(sigma[samples])) +
+  labs(x = expression(mu[samples]), y = expression(sigma[samples])) +
   theme(panel.grid = element_blank())
 ```
 
 Behold the updated densities.
 
-```{r, fig.width = 6, fig.height = 2.5}
-d_grid_samples %>% 
-  select(mu, sigma) %>% 
-  gather() %>% 
+```{r}
+#| fig-width: 6
+#| fig-height: 2.5
 
-  ggplot(aes(x = value)) + 
+d_grid_samples %>%
+  select(mu, sigma) %>%
+  gather() %>%
+
+  ggplot(aes(x = value)) +
   geom_density(fill = "grey33", linewidth = 0) +
   scale_y_continuous(NULL, breaks = NULL) +
   xlab(NULL) +
@@ -571,23 +639,34 @@ This is the point in the project where we hop off the grid-approximation train. 
 ### Fitting the model with ~~`map`~~ `brm()`
 
 We won't actually use `rethinking::map()`--which you should not conflate with `purrr::map()`--, but will jump straight to the primary brms modeling function, `brm()`. In the text, McElreath indexed his models with names like `m4.1`. I will largely follow that convention, but will replace the *m* with a *b* to stand for the brms package. Plus, once in a blue moon we will actually use the rethinking package to fit a model in order to contrast it to one fit with brms. On those occasions, we will index them using the *m* prefix. Here's the first model with `brm()`.
-      
-```{r b4.1}
+
+```{r}
+#| label: b4.1
+
 b4.1 <- brm(
-  data = d2, 
+  data = d2,
   family = gaussian,
   height ~ 1,
-  prior = c(prior(normal(178, 20), class = Intercept),
-            prior(uniform(0, 50), class = sigma, ub = 50)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(normal(178, 20), class = Intercept),
+    prior(uniform(0, 50), class = sigma, ub = 50)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   seed = 4,
-  file = "fits/b04.01")
+  file = "fits/b04.01"
+)
 ```
 
 After running model fit with HMC, it's a good idea to inspect the chains. As we'll see, McElreath covered this in @sec-Checking-the-chain. Here's a typical way to do so with brms.
 
-```{r, fig.width = 6, fig.height = 2.5}
-plot(b4.1) 
+```{r}
+#| fig-width: 6
+#| fig-height: 2.5
+
+plot(b4.1)
 ```
 
 If you want detailed diagnostics for the HMC chains, execute `launch_shinystan(b4.1)`. It'll keep you busy for a while. But anyway, the chains look good. We can reasonably trust the results.
@@ -612,20 +691,32 @@ summary(b4.1, prob = .89)
 
 Anyways, here's how to fit the model with the shockingly-narrow prior on $\mu$.
 
-```{r b4.2}
+```{r}
+#| label: b4.2
+
 b4.2 <- brm(
-  data = d2, family = gaussian,
+  data = d2,
+  family = gaussian,
   height ~ 1,
-  prior = c(prior(normal(178, 0.1), class = Intercept),
-            prior(uniform(0, 50), class = sigma, ub = 50)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(normal(178, 0.1), class = Intercept),
+    prior(uniform(0, 50), class = sigma, ub = 50)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   seed = 4,
-  file = "fits/b04.02")
+  file = "fits/b04.02"
+)
 ```
 
 Check the chains.
 
-```{r, fig.width = 6, fig.height = 2.5}
+```{r}
+#| fig-width: 6
+#| fig-height: 2.5
+
 plot(b4.2)
 ```
 
@@ -662,14 +753,18 @@ head(post)
 
 Now `select()` the columns containing the draws from the desired parameters and feed them into `cov()`.
 
-```{r, warning = F}
-select(post, b_Intercept:sigma) %>% 
+```{r}
+#| warning: false
+
+select(post, b_Intercept:sigma) %>%
   cov()
 ```
 
 That was "(1) a vector of variances for the parameters and (2) a correlation matrix" for them (p. 90). Here are just the variances (i.e., the diagonal elements) and the correlation matrix.
 
-```{r, warning = F}
+```{r}
+#| warning: false
+
 # variances
 select(post, b_Intercept:sigma) %>%
   cov() %>%
@@ -695,27 +790,36 @@ The final three columns--`.chain`, `.iteration`, and `.draw`--contain metadata a
 
 The `summary()` function doesn't work for brms posterior data frames quite the way `precis()` does for posterior data frames from the rethinking package. E.g.,
 
-```{r, warning = F}
+```{r}
+#| warning: false
+
 summary(post[, 1:2])
 ```
 
 Here's one option using the transpose of a `quantile()` call nested within `apply()`, which is a very general function you can learn more about [here](https://www.datacamp.com/community/tutorials/r-tutorial-apply-family#gs.f7fyw2s) or [here](https://www.r-bloggers.com/r-tutorial-on-the-apply-family-of-functions/).
 
-```{r, warning = F}
+```{r}
+#| warning: false
+
 t(apply(post[, 1:2], 2, quantile, probs = c(.5, .025, .75)))
 ```
 
 The base R code is compact, but somewhat opaque. Here's how to do something similar with more explicit tidyverse code.
 
-```{r, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+
 post %>%
-  select(sigma:b_Intercept) %>% 
+  select(sigma:b_Intercept) %>%
   gather(parameter) %>%
   group_by(parameter) %>%
-  summarise(mean = mean(value),
-            SD   = sd(value),
-            `2.5_percentile`  = quantile(value, probs = .025),
-            `97.5_percentile` = quantile(value, probs = .975)) %>%
+  summarise(
+    mean = mean(value),
+    SD = sd(value),
+    `2.5_percentile` = quantile(value, probs = .025),
+    `97.5_percentile` = quantile(value, probs = .975)
+  ) %>%
   mutate_if(is.numeric, round, digits = 2)
 ```
 
@@ -727,9 +831,11 @@ posterior_summary(b4.1)
 
 And if you're willing to drop the posterior $\textit{SD}$'s, you can use `tidybayes::mean_qi()`, too.
 
-```{r, warning = F}
-post %>% 
-  select(sigma:b_Intercept) %>% 
+```{r}
+#| warning: false
+
+post %>%
+  select(sigma:b_Intercept) %>%
   gather(parameter) %>%
   group_by(parameter) %>%
   mean_qi(value)
@@ -743,10 +849,12 @@ Again, `brms::as_draws_df()` is not the same as `rethinking::extract.samples()`.
 
 There's no need to fret about this when using brms. With HMC, we are not constraining the posteriors to the multivariate normal distribution. Here's our posterior density for $\sigma$.
 
-```{r, fig.width = 3, fig.height = 3}
-ggplot(data = post, 
-       aes(x = sigma)) +
-  geom_density(linewidth = 1/10, fill = "black") +
+```{r}
+#| fig-width: 3
+#| fig-height: 3
+
+ggplot(data = post, aes(x = sigma)) +
+  geom_density(linewidth = 1 / 10, fill = "black") +
   scale_y_continuous(NULL, breaks = NULL) +
   xlab(expression(sigma)) +
   theme(panel.grid = element_blank())
@@ -762,17 +870,19 @@ But sometimes you want to actually model $\sigma$, such as in the case where you
 
 Here's our scatter plot of our predictor `weight` and our criterion `height`.
 
-```{r, fig.width = 3, fig.height = 2.8}
-ggplot(data = d2, 
-       aes(x = weight, y = height)) +
+```{r}
+#| fig-width: 3
+#| fig-height: 2.8
+
+ggplot(data = d2, aes(x = weight, y = height)) +
   geom_point(shape = 1, size = 2) +
   theme_bw() +
   theme(panel.grid = element_blank())
 ```
 
-> There's obviously a relationship: Knowing a person’s weight helps you predict height. 
+> There's obviously a relationship: Knowing a person’s weight helps you predict height.
 >
->To make this vague observation into a more precise quantitative model that relates values of `weight` to plausible values of `height`, we need some more technology. How do we take our Gaussian model from the previous section and incorporate predictor variables? (p. 92)
+> To make this vague observation into a more precise quantitative model that relates values of `weight` to plausible values of `height`, we need some more technology. How do we take our Gaussian model from the previous section and incorporate predictor variables? (p. 92)
 
 ### The linear model strategy
 
@@ -796,8 +906,8 @@ The likelihood for our model is $h_i \sim \operatorname{Normal}(\mu_i, \sigma)$.
 
 Our linear model is $\mu_i = \alpha + \beta x_i$. The thing we're modeling is $\mu_i$, the conditional mean of our variable $h_i$, and we're modeling it with two parameters:
 
-* $\alpha$ (i.e., the intercept) and
-* $\beta$ (i.e., the slope).
+- $\alpha$ (i.e., the intercept) and
+- $\beta$ (i.e., the slope).
 
 #### Priors
 
@@ -811,10 +921,13 @@ Our univariable model has three priors:
 
 McElreath recommended we plot them. If you recall, we've already plotted $\operatorname{Normal}(178, 100)$ and $\operatorname{Uniform}(0, 50)$. Here's what the prior for our new $\beta$ parameter looks like.
 
-```{r, fig.width = 3, fig.height = 3}
-tibble(beta = -40:40) %>% 
-  mutate(density = dnorm(beta, mean = 0, sd = 10)) %>% 
-  
+```{r}
+#| fig-width: 3
+#| fig-height: 3
+
+tibble(beta = -40:40) %>%
+  mutate(density = dnorm(beta, mean = 0, sd = 10)) %>%
+
   ggplot(aes(x = beta, y = density)) +
   geom_area(linewidth = 0, fill = "royalblue") +
   scale_y_continuous(NULL, breaks = NULL) +
@@ -828,30 +941,41 @@ If you look closely at the statistical model and corresponding rethinking code a
 
 Unlike with the rethinking package, our `brms::brm()` syntax won't perfectly mirror the formal statistical notation. But here are the analogues to the exposition at the bottom of page 95 (with the corrected $\alpha$ prior).
 
-* $h_i \sim \operatorname{Normal}(\mu_i, \sigma)$: `family = gaussian`
-* $\mu_i = \alpha + \beta x_i$: `height ~ 1 + weight`
-* $\alpha \sim \operatorname{Normal}(178, 100)$: `prior(normal(178, 100), class = Intercept`
-* $\beta \sim \operatorname{Normal}(0, 10)$: ` prior(normal(0, 10), class = b)`
-* $\sigma \sim \operatorname{Uniform}(0, 50)$: `prior(uniform(0, 50), class = sigma)`
+- $h_i \sim \operatorname{Normal}(\mu_i, \sigma)$: `family = gaussian`
+- $\mu_i = \alpha + \beta x_i$: `height ~ 1 + weight`
+- $\alpha \sim \operatorname{Normal}(178, 100)$: `prior(normal(178, 100), class = Intercept`
+- $\beta \sim \operatorname{Normal}(0, 10)$: ` prior(normal(0, 10), class = b)`
+- $\sigma \sim \operatorname{Uniform}(0, 50)$: `prior(uniform(0, 50), class = sigma)`
 
 Thus, to add a predictor you just the `+` operator in the model `formula`.
-      
-```{r b4.3}
+
+```{r}
+#| label: b4.3
+
 b4.3 <- brm(
-  data = d2, 
+  data = d2,
   family = gaussian,
   height ~ 1 + weight,
-  prior = c(prior(normal(178, 100), class = Intercept),
-            prior(normal(0, 10), class = b),
-            prior(uniform(0, 50), class = sigma, ub = 50)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(normal(178, 100), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(uniform(0, 50), class = sigma, ub = 50)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   seed = 4,
-  file = "fits/b04.03")
+  file = "fits/b04.03"
+)
 ```
 
 Here are the trace plots.
 
-```{r, fig.width = 6, fig.height = 3.5}
+```{r}
+#| fig-width: 6
+#| fig-height: 3.5
+
 plot(b4.3)
 ```
 
@@ -870,7 +994,7 @@ h_i    & \sim \operatorname{Normal}(\alpha + \beta x_i, \sigma) \\
 
 ### Interpreting the model fit
 
-> One trouble with statistical models is that they are hard to understand. Once you've fit the model, it can only report posterior probabilities. These are the right answer to the question that is the combination of model and data. But it's your responsibility to process the answer and make sense of it. 
+> One trouble with statistical models is that they are hard to understand. Once you've fit the model, it can only report posterior probabilities. These are the right answer to the question that is the combination of model and data. But it's your responsibility to process the answer and make sense of it.
 >
 > There are two broad categories of processing: (1) reading tables and (2) plotting. (p. 97).
 
@@ -884,7 +1008,9 @@ posterior_summary(b4.3)[1:3, ]
 
 Again, brms doesn't have a convenient `corr = TRUE` argument for `plot()` or `summary()`. But you can get that information after putting the chains in a data frame.
 
-```{r, warning = F}
+```{r}
+#| warning: false
+
 as_draws_df(b4.3) %>%
   select(b_Intercept:sigma) %>%
   cor() %>%
@@ -899,28 +1025,41 @@ d2 <- d2 %>%
 ```
 
 Fit the `weight_c` model, `b4.4`.
-      
-```{r b4.4}
+
+```{r}
+#| label: b4.4
+
 b4.4 <- brm(
-  data = d2, 
+  data = d2,
   family = gaussian,
   height ~ 1 + weight_c,
-  prior = c(prior(normal(178, 100), class = Intercept),
-            prior(normal(0, 10), class = b),
-            prior(uniform(0, 50), class = sigma, ub = 50)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(normal(178, 100), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(uniform(0, 50), class = sigma, ub = 50)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   seed = 4,
-  file = "fits/b04.04")
+  file = "fits/b04.04"
+)
 ```
 
-```{r, fig.width = 6, fig.height = 3.5}
+```{r}
+#| fig-width: 6
+#| fig-height: 3.5
+
 plot(b4.4)
 posterior_summary(b4.4)[1:3, ]
 ```
 
 Here's the parameter correlation info.
 
-```{r, warning = F}
+```{r}
+#| warning: false
+
 as_draws_df(b4.4) %>%
   select(b_Intercept:sigma) %>%
   cor() %>%
@@ -932,14 +1071,13 @@ See? Now all the correlations are quite low. If you prefer a visual approach, tr
 Amidst all this talk about tables, I haven't actually shown how to put these parameter summaries in a table. Here's an example of how you might convert the `posterior_summary()` output into a summary table roughly following APA style.
 
 ```{r}
-posterior_summary(b4.4)[1:3, ] %>% 
-  data.frame() %>% 
-  rownames_to_column("parameter") %>% 
-  mutate_if(is.double, round, digits = 2) %>% 
-  rename(mean = Estimate,
-         sd   = Est.Error) %>% 
-  mutate(`95% CI` = str_c("[", Q2.5, ", ", Q97.5, "]")) %>% 
-  select(-starts_with("Q")) %>% 
+posterior_summary(b4.4)[1:3, ] %>%
+  data.frame() %>%
+  rownames_to_column("parameter") %>%
+  mutate_if(is.double, round, digits = 2) %>%
+  rename(mean = Estimate, sd = Est.Error) %>%
+  mutate(`95% CI` = str_c("[", Q2.5, ", ", Q97.5, "]")) %>%
+  select(-starts_with("Q")) %>%
   knitr::kable()
 ```
 
@@ -951,11 +1089,13 @@ This, of course, is just one way to present the summary information. Hopefully i
 
 Here is the code for Figure 4.4. Note our use of the `fixef()` function.
 
-```{r, fig.width = 3, fig.height = 2.8}
+```{r}
+#| fig-width: 3
+#| fig-height: 2.8
+
 d2 %>%
   ggplot(aes(x = weight, y = height)) +
-  geom_abline(intercept = fixef(b4.3)[1], 
-              slope     = fixef(b4.3)[2]) +
+  geom_abline(intercept = fixef(b4.3)[1], slope = fixef(b4.3)[2]) +
   geom_point(shape = 1, size = 2, color = "royalblue") +
   theme_bw() +
   theme(panel.grid = element_blank())
@@ -978,67 +1118,95 @@ post %>%
 
 Here are the four models leading up to McElreath's Figure 4.5. These models are all variations on `b4.3` from above, which we'll reflect in our naming convention.
 
-```{r b4.3_010}
+```{r}
+#| label: b4.3_010
+
 n <- 10
 
 b4.3_010 <- brm(
   data = d2 %>%
-    slice(1:n),  # note our tricky use of `n` and `slice()`
+    slice(1:n), # note our tricky use of `n` and `slice()`
   family = gaussian,
   height ~ 1 + weight,
-  prior = c(prior(normal(178, 100), class = Intercept),
-            prior(normal(0, 10), class = b),
-            prior(uniform(0, 50), class = sigma, ub = 50)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(normal(178, 100), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(uniform(0, 50), class = sigma, ub = 50)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   seed = 4,
-  file = "fits/b04.03_010")
+  file = "fits/b04.03_010"
+)
 
 n <- 50
 
 b4.3_050 <- brm(
   data = d2 %>%
-    slice(1:n), 
+    slice(1:n),
   family = gaussian,
   height ~ 1 + weight,
-  prior = c(prior(normal(178, 100), class = Intercept),
-            prior(normal(0, 10), class = b),
-            prior(uniform(0, 50), class = sigma, ub = 50)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(normal(178, 100), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(uniform(0, 50), class = sigma, ub = 50)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   seed = 4,
-  file = "fits/b04.03_050")
+  file = "fits/b04.03_050"
+)
 
 n <- 150
 
 b4.3_150 <- brm(
   data = d2 %>%
-    slice(1:n), 
+    slice(1:n),
   family = gaussian,
   height ~ 1 + weight,
-  prior = c(prior(normal(178, 100), class = Intercept),
-            prior(normal(0, 10), class = b),
-            prior(uniform(0, 50), class = sigma, ub = 50)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(normal(178, 100), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(uniform(0, 50), class = sigma, ub = 50)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   seed = 4,
-  file = "fits/b04.03_150")
+  file = "fits/b04.03_150"
+)
 
 n <- 352
 
 b4.3_352 <- brm(
   data = d2 %>%
-    slice(1:n), 
+    slice(1:n),
   family = gaussian,
   height ~ 1 + weight,
-  prior = c(prior(normal(178, 100), class = Intercept),
-            prior(normal(0, 10), class = b),
-            prior(uniform(0, 50), class = sigma, ub = 50)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(normal(178, 100), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(uniform(0, 50), class = sigma, ub = 50)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   seed = 4,
-  file = "fits/b04.03_352")
+  file = "fits/b04.03_352"
+)
 ```
 
 I'm not going to clutter up the document with all the trace plots and coefficient summaries from these four models. But here's how to get that information.
 
-```{r, eval = F}
+```{r}
+#| eval: false
+
 plot(b4.3_010)
 print(b4.3_010)
 
@@ -1054,7 +1222,7 @@ print(b4.3_352)
 
 We'll need to put the chains of each model into data frames.
 
-```{r} 
+```{r}
 post010 <- as_draws_df(b4.3_010)
 post050 <- as_draws_df(b4.3_050)
 post150 <- as_draws_df(b4.3_150)
@@ -1063,51 +1231,60 @@ post352 <- as_draws_df(b4.3_352)
 
 Here is the code for the four individual plots.
 
-```{r, warning = F}
-p1 <- ggplot(data = d2 %>% slice(1:10), 
-             aes(x = weight, y = height)) +
-  geom_abline(data = post010 %>% slice(1:20),
-              aes(intercept = b_Intercept, slope = b_weight, group = .draw),
-              linewidth = 1/3, alpha = .3) +
+```{r}
+#| warning: false
+
+p1 <- ggplot(data = d2 %>% slice(1:10), aes(x = weight, y = height)) +
+  geom_abline(
+    data = post010 %>% slice(1:20),
+    aes(intercept = b_Intercept, slope = b_weight, group = .draw),
+    linewidth = 1 / 3,
+    alpha = .3
+  ) +
   geom_point(shape = 1, size = 2, color = "royalblue") +
-  coord_cartesian(xlim = range(d2$weight),
-                  ylim = range(d2$height)) +
+  coord_cartesian(xlim = range(d2$weight), ylim = range(d2$height)) +
   labs(subtitle = "N = 10")
 
-p2 <- ggplot(data = d2 %>% slice(1:50), 
-             aes(x = weight, y = height)) +
-  geom_abline(data = post050 %>% slice(1:20),
-              aes(intercept = b_Intercept, slope = b_weight, group = .draw),
-              linewidth = 1/3, alpha = .3) +
+p2 <- ggplot(data = d2 %>% slice(1:50), aes(x = weight, y = height)) +
+  geom_abline(
+    data = post050 %>% slice(1:20),
+    aes(intercept = b_Intercept, slope = b_weight, group = .draw),
+    linewidth = 1 / 3,
+    alpha = .3
+  ) +
   geom_point(shape = 1, size = 2, color = "royalblue") +
-  coord_cartesian(xlim = range(d2$weight),
-                  ylim = range(d2$height)) +
+  coord_cartesian(xlim = range(d2$weight), ylim = range(d2$height)) +
   labs(subtitle = "N = 50")
 
-p3 <- ggplot(data = d2 %>% slice(1:150), 
-             aes(x = weight, y = height)) +
-  geom_abline(data = post150 %>% slice(1:20),
-              aes(intercept = b_Intercept, slope = b_weight, group = .draw),
-              linewidth = 1/3, alpha = .3) +
+p3 <- ggplot(data = d2 %>% slice(1:150), aes(x = weight, y = height)) +
+  geom_abline(
+    data = post150 %>% slice(1:20),
+    aes(intercept = b_Intercept, slope = b_weight, group = .draw),
+    linewidth = 1 / 3,
+    alpha = .3
+  ) +
   geom_point(shape = 1, size = 2, color = "royalblue") +
-  coord_cartesian(xlim = range(d2$weight),
-                  ylim = range(d2$height)) +
+  coord_cartesian(xlim = range(d2$weight), ylim = range(d2$height)) +
   labs(subtitle = "N = 150")
 
-p4 <- ggplot(data = d2, 
-             aes(x = weight, y = height)) +
-  geom_abline(data = post352 %>% slice(1:20),
-              aes(intercept = b_Intercept, slope = b_weight, group = .draw),
-              linewidth = 1/3, alpha = .3) +
+p4 <- ggplot(data = d2, aes(x = weight, y = height)) +
+  geom_abline(
+    data = post352 %>% slice(1:20),
+    aes(intercept = b_Intercept, slope = b_weight, group = .draw),
+    linewidth = 1 / 3,
+    alpha = .3
+  ) +
   geom_point(shape = 1, size = 2, color = "royalblue") +
-  coord_cartesian(xlim = range(d2$weight),
-                  ylim = range(d2$height)) +
+  coord_cartesian(xlim = range(d2$weight), ylim = range(d2$height)) +
   labs(subtitle = "N = 352")
 ```
 
 Now we can combine the ggplots with patchwork syntax to make the full version of Figure 4.5.
 
-```{r, fig.width = 5, fig.height = 5}
+```{r}
+#| fig-width: 5
+#| fig-height: 5
+
 (p1 + p2 + p3 + p4) &
   theme_bw() &
   theme(panel.grid = element_blank())
@@ -1117,16 +1294,21 @@ Now we can combine the ggplots with patchwork syntax to make the full version of
 
 Remember, if you want to plot McElreath's `mu_at_50` with ggplot2, you'll need to save it as a data frame or a tibble.
 
-```{r, warning = F}
-mu_at_50 <- post %>% 
+```{r}
+#| warning: false
+
+mu_at_50 <- post %>%
   transmute(mu_at_50 = b_Intercept + b_weight * 50)
- 
+
 head(mu_at_50)
 ```
 
 And here is a version McElreath's Figure 4.6 density plot.
 
-```{r, fig.width = 3, fig.height = 3}
+```{r}
+#| fig-width: 3
+#| fig-height: 3
+
 mu_at_50 %>%
   ggplot(aes(x = mu_at_50)) +
   geom_density(linewidth = 0, fill = "royalblue") +
@@ -1138,16 +1320,18 @@ mu_at_50 %>%
 We'll use `mean_hdi()` to get both 89% and 95% HPDIs along with the mean.
 
 ```{r}
-mean_hdi(mu_at_50[,1], .width = c(.89, .95))
+mean_hdi(mu_at_50[, 1], .width = c(.89, .95))
 ```
 
 If you wanted to express those sweet 95% HPDIs on your density plot, you might use the `tidybayes::stat_halfeye()` function. Since `stat_halfeye()` also returns a point estimate, we'll just throw in the mode.
 
-```{r, fig.width = 3, fig.height = 3}
+```{r}
+#| fig-width: 3
+#| fig-height: 3
+
 mu_at_50 %>%
   ggplot(aes(x = mu_at_50, y = 0)) +
-  stat_halfeye(point_interval = mode_hdi, .width = .95,
-               fill = "royalblue") +
+  stat_halfeye(point_interval = mode_hdi, .width = .95, fill = "royalblue") +
   scale_y_continuous(NULL, breaks = NULL) +
   xlab(expression(mu["height | weight = 50"])) +
   theme_classic()
@@ -1165,15 +1349,16 @@ When you specify `summary = F`, `fitted()` returns a matrix of values with as ma
 
 Much like rethinking's `link()`, `fitted()` can accommodate custom predictor values with its `newdata` argument.
 
-```{r, results = "hide", warning = F}
+```{r}
+#| warning: false
+#| results: "hide"
+
 weight_seq <- tibble(weight = seq(from = 25, to = 70, by = 1))
 
-mu <- fitted(b4.3,
-             summary = F,
-             newdata = weight_seq) %>%
+mu <- fitted(b4.3, summary = F, newdata = weight_seq) %>%
   as_tibble() %>%
   # here we name the columns after the `weight` values from which they were computed
-  set_names(25:70) %>% 
+  set_names(25:70) %>%
   mutate(iter = 1:n())
 
 str(mu)
@@ -1183,7 +1368,7 @@ Anticipating ggplot2, we went ahead and converted the output to a tibble. But we
 
 ```{r}
 mu <- mu %>%
-  gather(weight, height, -iter) %>% 
+  gather(weight, height, -iter) %>%
   # we might reformat `weight` to numerals
   mutate(weight = as.numeric(weight))
 
@@ -1192,19 +1377,24 @@ head(mu)
 
 That's enough data processing. Here we reproduce McElreath's Figure 4.7.a.
 
-```{r, warning = F, fig.width = 3, fig.height = 2.8}
+```{r}
+#| warning: false
+#| fig-width: 3
+#| fig-height: 2.8
+
 d2 %>%
   ggplot(aes(x = weight, y = height)) +
-  geom_point(data = mu %>% filter(iter < 101),
-             alpha = .1)
+  geom_point(data = mu %>% filter(iter < 101), alpha = .1)
 
 # or prettied up a bit
 d2 %>%
   ggplot(aes(x = weight, y = height)) +
-  geom_point(data = mu %>% filter(iter < 101), 
-             color = "navyblue", alpha = .05) +
-  theme(text = element_text(family = "Times"),
-        panel.grid = element_blank())
+  geom_point(
+    data = mu %>% filter(iter < 101),
+    color = "navyblue",
+    alpha = .05
+  ) +
+  theme(text = element_text(family = "Times"), panel.grid = element_blank())
 ```
 
 With `fitted()`, it's quite easy to plot a regression line and its intervals. Just omit the `summary = F` argument.
@@ -1220,17 +1410,25 @@ head(mu_summary)
 
 Here it is, our analogue to Figure 4.7.b.
 
-```{r, warning = F, fig.width = 3, fig.height = 2.8}
+```{r}
+#| warning: false
+#| fig-width: 3
+#| fig-height: 2.8
+
 d2 %>%
   ggplot(aes(x = weight, y = height)) +
-  geom_smooth(data = mu_summary,
-              aes(y = Estimate, ymin = Q2.5, ymax = Q97.5),
-              stat = "identity",
-              fill = "grey70", color = "black", alpha = 1, linewidth = 1/2) +
-  geom_point(color = "navyblue", shape = 1, size = 1.5, alpha = 2/3) +
+  geom_smooth(
+    data = mu_summary,
+    aes(y = Estimate, ymin = Q2.5, ymax = Q97.5),
+    stat = "identity",
+    fill = "grey70",
+    color = "black",
+    alpha = 1,
+    linewidth = 1 / 2
+  ) +
+  geom_point(color = "navyblue", shape = 1, size = 1.5, alpha = 2 / 3) +
   coord_cartesian(xlim = range(d2$weight)) +
-  theme(text = element_text(family = "Times"),
-        panel.grid = element_blank())
+  theme(text = element_text(family = "Times"), panel.grid = element_blank())
 ```
 
 If you wanted to use intervals other than the default 95% ones, you'd enter a `probs` argument like this: `fitted(b4.3, newdata = weight.seq, probs = c(.25, .75))`. The resulting third and fourth vectors from the `fitted()` object would be named `Q25` and `Q75` instead of the default `Q2.5` and `Q97.5`. The [`Q` prefix](https://github.com/paul-buerkner/brms/issues/425) stands for quantile.
@@ -1259,30 +1457,44 @@ The `predict()` code looks a lot like what we used for `fitted()`.
 pred_height <- predict(b4.3, newdata = weight_seq) %>%
   data.frame() %>%
   bind_cols(weight_seq)
-  
+
 pred_height %>%
   slice(1:6)
 ```
 
 This time the summary information in our data frame is for, as McElreath put it, "simulated heights, not distributions of plausible average height, $\mu$" (p. 108). Another way of saying that is that these simulations are the joint consequence of $\mu$ AND $\sigma$, unlike the results of `fitted()`, which only reflect $\mu$. Here's our plot for Figure 4.8.
 
-```{r, warning = F, fig.width = 3, fig.height = 2.8}
+```{r}
+#| warning: false
+#| fig-width: 3
+#| fig-height: 2.8
+
 d2 %>%
   ggplot(aes(x = weight)) +
-  geom_ribbon(data = pred_height, 
-              aes(ymin = Q2.5, ymax = Q97.5),
-              fill = "grey83") +
-  geom_smooth(data = mu_summary,
-              aes(y = Estimate, ymin = Q2.5, ymax = Q97.5),
-              stat = "identity",
-              fill = "grey70", color = "black", alpha = 1, linewidth = 1/2) +
-  geom_point(aes(y = height),
-             color = "navyblue", shape = 1, size = 1.5, alpha = 2/3) +
+  geom_ribbon(
+    data = pred_height,
+    aes(ymin = Q2.5, ymax = Q97.5),
+    fill = "grey83"
+  ) +
+  geom_smooth(
+    data = mu_summary,
+    aes(y = Estimate, ymin = Q2.5, ymax = Q97.5),
+    stat = "identity",
+    fill = "grey70",
+    color = "black",
+    alpha = 1,
+    linewidth = 1 / 2
+  ) +
+  geom_point(
+    aes(y = height),
+    color = "navyblue",
+    shape = 1,
+    size = 1.5,
+    alpha = 2 / 3
+  ) +
   ylab("height") +
-  coord_cartesian(xlim = range(d2$weight),
-                  ylim = range(d2$height)) +
-  theme(text = element_text(family = "Times"),
-        panel.grid = element_blank())
+  coord_cartesian(xlim = range(d2$weight), ylim = range(d2$height)) +
+  theme(text = element_text(family = "Times"), panel.grid = element_blank())
 ```
 
 ## Polynomial regression {#sec-Polynomial-regression}
@@ -1307,20 +1519,31 @@ d <- d %>%
 
 Here's the quadratic model in brms.
 
-```{r b4.5}
+```{r}
+#| label: b4.5
+
 b4.5 <- brm(
-  data = d, 
+  data = d,
   family = gaussian,
   height ~ 1 + weight_s + I(weight_s^2),
-  prior = c(prior(normal(178, 100), class = Intercept),
-            prior(normal(0, 10), class = b),
-            prior(uniform(0, 50), class = sigma, ub = 50)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(normal(178, 100), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(uniform(0, 50), class = sigma, ub = 50)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   seed = 4,
-  file = "fits/b04.05")
+  file = "fits/b04.05"
+)
 ```
 
-```{r, fig.width = 6, fig.height = 4.5}
+```{r}
+#| fig-width: 6
+#| fig-height: 4.5
+
 plot(b4.5)
 print(b4.5)
 ```
@@ -1336,26 +1559,36 @@ f <- fitted(b4.5, newdata = weight_seq) %>%
 
 p <- predict(b4.5, newdata = weight_seq) %>%
   data.frame() %>%
-  bind_cols(weight_seq)  
+  bind_cols(weight_seq)
 ```
 
 Behold the code for our version of Figure 4.9.a. You'll notice how little the code changed from that for Figure 4.8, above.
 
-```{r, warning = F, fig.width = 3, fig.height = 3}
-ggplot(data = d, 
-       aes(x = weight_s)) +
-  geom_ribbon(data = p, 
-              aes(ymin = Q2.5, ymax = Q97.5),
-              fill = "grey83") +
-  geom_smooth(data = f,
-              aes(y = Estimate, ymin = Q2.5, ymax = Q97.5),
-              stat = "identity",
-              fill = "grey70", color = "black", alpha = 1, linewidth = 1/2) +
-  geom_point(aes(y = height),
-             color = "navyblue", shape = 1, size = 1.5, alpha = 1/3) +
+```{r}
+#| warning: false
+#| fig-width: 3
+#| fig-height: 3
+
+ggplot(data = d, aes(x = weight_s)) +
+  geom_ribbon(data = p, aes(ymin = Q2.5, ymax = Q97.5), fill = "grey83") +
+  geom_smooth(
+    data = f,
+    aes(y = Estimate, ymin = Q2.5, ymax = Q97.5),
+    stat = "identity",
+    fill = "grey70",
+    color = "black",
+    alpha = 1,
+    linewidth = 1 / 2
+  ) +
+  geom_point(
+    aes(y = height),
+    color = "navyblue",
+    shape = 1,
+    size = 1.5,
+    alpha = 1 / 3
+  ) +
   coord_cartesian(xlim = range(d$weight_s)) +
-  theme(text = element_text(family = "Times"),
-        panel.grid = element_blank())
+  theme(text = element_text(family = "Times"), panel.grid = element_blank())
 ```
 
 From a formula perspective, the cubic model is a simple extenstion of the quadratic:
@@ -1364,120 +1597,168 @@ $$\mu = \alpha + \beta_1 x_i + \beta_2 x_i^2 + \beta_3 x_i^3.$$
 
 Fit it like so.
 
-```{r b4.6}
+```{r}
+#| label: b4.6
+
 b4.6 <- brm(
-  data = d, 
+  data = d,
   family = gaussian,
   height ~ 1 + weight_s + I(weight_s^2) + I(weight_s^3),
-  prior = c(prior(normal(178, 100), class = Intercept),
-            prior(normal(0, 10), class = b),
-            prior(uniform(0, 50), class = sigma, ub = 50)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(normal(178, 100), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(uniform(0, 50), class = sigma, ub = 50)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   seed = 4,
-  file = "fits/b04.06")
+  file = "fits/b04.06"
+)
 ```
 
 And now we'll fit the good old linear model.
 
-```{r b4.7}
+```{r}
+#| label: b4.7
+
 b4.7 <- brm(
-  data = d, family = gaussian,
+  data = d,
+  family = gaussian,
   height ~ 1 + weight_s,
-  prior = c(prior(normal(178, 100), class = Intercept),
-            prior(normal(0, 10), class = b),
-            prior(uniform(0, 50), class = sigma, ub = 50)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(normal(178, 100), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(uniform(0, 50), class = sigma, ub = 50)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   seed = 4,
-  file = "fits/b04.07")
+  file = "fits/b04.07"
+)
 ```
 
 Here's the `fitted()`, `predict()`, and ggplot2 code for Figure 4.9.c, the cubic model.
 
-```{r, warning = F, fig.width = 3, fig.height = 3}
+```{r}
+#| warning: false
+#| fig-width: 3
+#| fig-height: 3
+
 f <- fitted(b4.6, newdata = weight_seq) %>%
   data.frame() %>%
   bind_cols(weight_seq)
 
 p <- predict(b4.6, newdata = weight_seq) %>%
   data.frame() %>%
-  bind_cols(weight_seq) 
+  bind_cols(weight_seq)
 
-ggplot(data = d, 
-       aes(x = weight_s)) +
-  geom_ribbon(data = p, 
-              aes(ymin = Q2.5, ymax = Q97.5),
-              fill = "grey83") +
-  geom_smooth(data = f,
-              aes(y = Estimate, ymin = Q2.5, ymax = Q97.5),
-              stat = "identity",
-              fill = "grey70", color = "black", alpha = 1, linewidth = 1/4) +
-  geom_point(aes(y = height),
-             color = "navyblue", shape = 1, size = 1.5, alpha = 1/3) +
+ggplot(data = d, aes(x = weight_s)) +
+  geom_ribbon(data = p, aes(ymin = Q2.5, ymax = Q97.5), fill = "grey83") +
+  geom_smooth(
+    data = f,
+    aes(y = Estimate, ymin = Q2.5, ymax = Q97.5),
+    stat = "identity",
+    fill = "grey70",
+    color = "black",
+    alpha = 1,
+    linewidth = 1 / 4
+  ) +
+  geom_point(
+    aes(y = height),
+    color = "navyblue",
+    shape = 1,
+    size = 1.5,
+    alpha = 1 / 3
+  ) +
   coord_cartesian(xlim = range(d$weight_s)) +
-  theme(text = element_text(family = "Times"),
-        panel.grid = element_blank())
+  theme(text = element_text(family = "Times"), panel.grid = element_blank())
 ```
 
 And here's the `fitted()`, `predict()`, and ggplot2 code for Figure 4.9.a, the linear model.
 
-```{r, warning = F, fig.width = 3, fig.height = 3}
+```{r}
+#| warning: false
+#| fig-width: 3
+#| fig-height: 3
+
 f <- fitted(b4.7, newdata = weight_seq) %>%
   data.frame() %>%
   bind_cols(weight_seq)
 
 p <- predict(b4.7, newdata = weight_seq) %>%
   data.frame() %>%
-  bind_cols(weight_seq) 
+  bind_cols(weight_seq)
 
-ggplot(data = d, 
-       aes(x = weight_s)) +
-  geom_ribbon(data = p, 
-              aes(ymin = Q2.5, ymax = Q97.5),
-              fill = "grey83") +
-  geom_smooth(data = f,
-              aes(y = Estimate, ymin = Q2.5, ymax = Q97.5),
-              stat = "identity",
-              fill = "grey70", color = "black", alpha = 1, linewidth = 1/4) +
-  geom_point(aes(y = height),
-             color = "navyblue", shape = 1, size = 1.5, alpha = 1/3) +
+ggplot(data = d, aes(x = weight_s)) +
+  geom_ribbon(data = p, aes(ymin = Q2.5, ymax = Q97.5), fill = "grey83") +
+  geom_smooth(
+    data = f,
+    aes(y = Estimate, ymin = Q2.5, ymax = Q97.5),
+    stat = "identity",
+    fill = "grey70",
+    color = "black",
+    alpha = 1,
+    linewidth = 1 / 4
+  ) +
+  geom_point(
+    aes(y = height),
+    color = "navyblue",
+    shape = 1,
+    size = 1.5,
+    alpha = 1 / 3
+  ) +
   coord_cartesian(xlim = range(d$weight_s)) +
-  theme(text = element_text(family = "Times"),
-        panel.grid = element_blank())
+  theme(text = element_text(family = "Times"), panel.grid = element_blank())
 ```
 
 ##### Overthinking: Converting back to natural scale
 
 You can apply McElreath's conversion trick within the ggplot2 environment, too. Here it is with the linear model.
 
-```{r, warning = F, fig.width = 3, fig.height = 3}
+```{r}
+#| warning: false
+#| fig-width: 3
+#| fig-height: 3
+
 at <- c(-2, -1, 0, 1, 2)
 
-ggplot(data = d, 
-       aes(x = weight_s)) +
-  geom_ribbon(data = p, 
-              aes(ymin = Q2.5, ymax = Q97.5),
-              fill = "grey83") +
-  geom_smooth(data = f,
-              aes(y = Estimate, ymin = Q2.5, ymax = Q97.5),
-              stat = "identity",
-              fill = "grey70", color = "black", alpha = 1, linewidth = 1/4) +
-  geom_point(aes(y = height),
-             color = "navyblue", shape = 1, size = 1.5, alpha = 1/3) +
+ggplot(data = d, aes(x = weight_s)) +
+  geom_ribbon(data = p, aes(ymin = Q2.5, ymax = Q97.5), fill = "grey83") +
+  geom_smooth(
+    data = f,
+    aes(y = Estimate, ymin = Q2.5, ymax = Q97.5),
+    stat = "identity",
+    fill = "grey70",
+    color = "black",
+    alpha = 1,
+    linewidth = 1 / 4
+  ) +
+  geom_point(
+    aes(y = height),
+    color = "navyblue",
+    shape = 1,
+    size = 1.5,
+    alpha = 1 / 3
+  ) +
   coord_cartesian(xlim = range(d$weight_s)) +
-  theme(text = element_text(family = "Times"),
-        panel.grid = element_blank()) +
-  
+  theme(text = element_text(family = "Times"), panel.grid = element_blank()) +
+
   # here it is!
-  scale_x_continuous("standardized weight converted back",
-                     breaks = at,
-                     labels = round(at * sd(d$weight) + mean(d$weight), 1))
+  scale_x_continuous(
+    "standardized weight converted back",
+    breaks = at,
+    labels = round(at * sd(d$weight) + mean(d$weight), 1)
+  )
 ```
 
-## Session info {-}
+## Session info {.unnumbered}
 
 ```{r}
 sessionInfo()
 ```
 
-## Comments {-}
-
+## Comments {.unnumbered}

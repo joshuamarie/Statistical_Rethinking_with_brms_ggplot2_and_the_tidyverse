@@ -16,7 +16,10 @@
 
 Let's get the `Trolley` data from rethinking [see @cushmanRoleConsciousReasoning2006].
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 library(rethinking)
 data(Trolley)
 d <- Trolley
@@ -24,7 +27,10 @@ d <- Trolley
 
 Unload rethinking and load brms.
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 rm(Trolley)
 detach(package:rethinking, unload = T)
 library(brms)
@@ -32,7 +38,10 @@ library(brms)
 
 Use the `dplyr::glimpse()` to get a sense of the dimensions of the data.
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 library(tidyverse)
 
 glimpse(d)
@@ -41,8 +50,8 @@ glimpse(d)
 Though we have 9,930 rows, we only have 331 unique individuals.
 
 ```{r}
-d %>% 
-  distinct(id) %>% 
+d %>%
+  distinct(id) %>%
   count()
 ```
 
@@ -50,13 +59,18 @@ d %>%
 
 Before we get to plotting, in this chapter we'll use theme settings and a color palette from the [ggthemes package](https://cran.r-project.org/package=ggthemes).
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 library(ggthemes)
 ```
 
 We'll take our basic theme settings from the `theme_hc()` function. We'll use the `Green fields` color palette, which we can inspect with the `canva_pal()` function and a little help from `scales::show_col()`.
 
-```{r, fig.height = 2.25}
+```{r}
+#| fig-height: 2.25
+
 scales::show_col(canva_pal("Green fields")(4))
 
 canva_pal("Green fields")(4)
@@ -65,79 +79,98 @@ canva_pal("Green fields")(4)[3]
 
 Now we're ready to make our version of the simple Figure 11.1 histogram of our primary variable, `response`.
 
-```{r, fig.width = 2.5, fig.height = 3}
+```{r}
+#| fig-width: 2.5
+#| fig-height: 3
+
 p1 <- ggplot(data = d, aes(x = response, fill = after_stat(x))) +
-  geom_histogram(binwidth = 1/4, linewidth = 0) +
+  geom_histogram(binwidth = 1 / 4, linewidth = 0) +
   scale_x_continuous(breaks = 1:7) +
-  scale_fill_gradient(low  = canva_pal("Green fields")(4)[4],
-                      high = canva_pal("Green fields")(4)[1]) +
+  scale_fill_gradient(
+    low = canva_pal("Green fields")(4)[4],
+    high = canva_pal("Green fields")(4)[1]
+  ) +
   theme_hc() +
-  theme(axis.ticks = element_blank(),
-        legend.position = "none",
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    axis.ticks = element_blank(),
+    legend.position = "none",
+    plot.background = element_rect(fill = "grey92")
+  )
 
 p1
 ```
 
 Our cumulative proportion plot, Figure 11.1.b, will require some pre-plot wrangling.
 
-```{r, fig.width = 2.5, fig.height = 3}
+```{r}
+#| fig-width: 2.5
+#| fig-height: 3
+
 p2 <- d %>%
   count(response) %>%
-  mutate(pr_k     = n / nrow(d),
-         cum_pr_k = cumsum(pr_k)) %>% 
-  
-  ggplot(aes(x = response, y = cum_pr_k, 
-             fill = response)) +
+  mutate(pr_k = n / nrow(d), cum_pr_k = cumsum(pr_k)) %>%
+
+  ggplot(aes(x = response, y = cum_pr_k, fill = response)) +
   geom_line(color = canva_pal("Green fields")(4)[2]) +
-  geom_point(shape = 21, color = "grey92", 
-             size = 2.5, stroke = 1) +
+  geom_point(shape = 21, color = "grey92", size = 2.5, stroke = 1) +
   scale_x_continuous(breaks = 1:7) +
   scale_y_continuous("cumulative proportion", breaks = c(0, .5, 1)) +
-  scale_fill_gradient(low  = canva_pal("Green fields")(4)[4],
-                      high = canva_pal("Green fields")(4)[1]) +
+  scale_fill_gradient(
+    low = canva_pal("Green fields")(4)[4],
+    high = canva_pal("Green fields")(4)[1]
+  ) +
   coord_cartesian(ylim = c(0, 1)) +
   theme_hc() +
-  theme(axis.ticks = element_blank(),
-        legend.position = "none",
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    axis.ticks = element_blank(),
+    legend.position = "none",
+    plot.background = element_rect(fill = "grey92")
+  )
 
 p2
 ```
 
 In order to make the next plot, we'll need McElreath's `logit()` function. Here it is, the logarithm of cumulative odds plot, Figure 11.1.c.
 
-```{r, fig.width = 2.5, fig.height = 3}
+```{r}
+#| fig-width: 2.5
+#| fig-height: 3
+
 # McElreath's convenience function from page 335
 logit <- function(x) log(x / (1 - x))
 
 p3 <- d %>%
   count(response) %>%
-  mutate(cum_pr_k = cumsum(n / nrow(d))) %>% 
-  filter(response < 7) %>% 
-  
+  mutate(cum_pr_k = cumsum(n / nrow(d))) %>%
+  filter(response < 7) %>%
+
   # we can do the `logit()` conversion right in ggplot2
-  ggplot(aes(x = response, y = logit(cum_pr_k), 
-             fill = response)) +
+  ggplot(aes(x = response, y = logit(cum_pr_k), fill = response)) +
   geom_line(color = canva_pal("Green fields")(4)[2]) +
-  geom_point(shape = 21, colour = "grey92", 
-             size = 2.5, stroke = 1) +
+  geom_point(shape = 21, colour = "grey92", size = 2.5, stroke = 1) +
   scale_x_continuous(breaks = 1:7) +
-  scale_fill_gradient(low  = canva_pal("Green fields")(4)[4],
-                      high = canva_pal("Green fields")(4)[1]) +
+  scale_fill_gradient(
+    low = canva_pal("Green fields")(4)[4],
+    high = canva_pal("Green fields")(4)[1]
+  ) +
   coord_cartesian(xlim = c(1, 7)) +
   ylab("log-cumulative-odds") +
   theme_hc() +
-  theme(axis.ticks = element_blank(),
-        legend.position = "none",
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    axis.ticks = element_blank(),
+    legend.position = "none",
+    plot.background = element_rect(fill = "grey92")
+  )
 
 p3
 ```
 
 Why not combine the three subplots with patchwork?
 
-```{r, fig.width = 7, fig.height = 3}
+```{r}
+#| fig-width: 7
+#| fig-height: 3
+
 library(patchwork)
 
 p1 | p2 | p3
@@ -145,48 +178,64 @@ p1 | p2 | p3
 
 The code for Figure 11.2 is itself something of a monster.
 
-```{r, fig.width = 3.5, fig.height = 3}
+```{r}
+#| fig-width: 3.5
+#| fig-height: 3
+
 # primary data
 d_plot <- d %>%
   count(response) %>%
-  mutate(pr_k     = n / nrow(d),
-         cum_pr_k = cumsum(n / nrow(d))) %>% 
-  mutate(discrete_probability = ifelse(response == 1, cum_pr_k, cum_pr_k - pr_k))
+  mutate(pr_k = n / nrow(d), cum_pr_k = cumsum(n / nrow(d))) %>%
+  mutate(
+    discrete_probability = ifelse(response == 1, cum_pr_k, cum_pr_k - pr_k)
+  )
 
 # annotation
 text <- tibble(
-  text     = 1:7,
+  text = 1:7,
   response = seq(from = 1.25, to = 7.25, by = 1),
-  cum_pr_k = d_plot$cum_pr_k - .065)
+  cum_pr_k = d_plot$cum_pr_k - .065
+)
 
-ggplot(data = d_plot,
-       aes(x = response, y = cum_pr_k,
-           color = cum_pr_k, fill = cum_pr_k)) +
+ggplot(
+  data = d_plot,
+  aes(x = response, y = cum_pr_k, color = cum_pr_k, fill = cum_pr_k)
+) +
   geom_line(color = canva_pal("Green fields")(4)[1]) +
-  geom_point(shape = 21, colour = "grey92", 
-             size = 2.5, stroke = 1) +
-  geom_linerange(aes(ymin = 0, ymax = cum_pr_k),
-                 alpha = 1/2, color = canva_pal("Green fields")(4)[1]) +
+  geom_point(shape = 21, colour = "grey92", size = 2.5, stroke = 1) +
+  geom_linerange(
+    aes(ymin = 0, ymax = cum_pr_k),
+    alpha = 1 / 2,
+    color = canva_pal("Green fields")(4)[1]
+  ) +
   # there must be more elegant ways to do this part
-  geom_linerange(aes(x = response + .025,
-                     ymin = ifelse(response == 1, 0, discrete_probability), 
-                     ymax = cum_pr_k),
-                 color = "black") +
+  geom_linerange(
+    aes(
+      x = response + .025,
+      ymin = ifelse(response == 1, 0, discrete_probability),
+      ymax = cum_pr_k
+    ),
+    color = "black"
+  ) +
   # number annotation
-  geom_text(data = text, 
-            aes(label = text),
-            size = 4) +
+  geom_text(data = text, aes(label = text), size = 4) +
   scale_x_continuous(breaks = 1:7) +
   scale_y_continuous("cumulative proportion", breaks = 0:2 / 2) +
-  scale_fill_gradient(low  = canva_pal("Green fields")(4)[4],
-                      high = canva_pal("Green fields")(4)[1]) +
-  scale_color_gradient(low  = canva_pal("Green fields")(4)[4],
-                       high = canva_pal("Green fields")(4)[1]) +
+  scale_fill_gradient(
+    low = canva_pal("Green fields")(4)[4],
+    high = canva_pal("Green fields")(4)[1]
+  ) +
+  scale_color_gradient(
+    low = canva_pal("Green fields")(4)[4],
+    high = canva_pal("Green fields")(4)[1]
+  ) +
   coord_cartesian(ylim = c(0, 1)) +
   theme_hc() +
-  theme(axis.ticks = element_blank(),
-        legend.position = "none",
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    axis.ticks = element_blank(),
+    legend.position = "none",
+    plot.background = element_rect(fill = "grey92")
+  )
 ```
 
 McElreath's convention for this first type of statistical model is
@@ -201,26 +250,34 @@ R_i & \sim \operatorname{Ordered}(\mathbf p) \\
 
 Whereas in `rethinking::map()` you indicate the likelihood by `<criterion> ~ dordlogit(phi , c(<the thresholds>)`, in `brms::brm()` you code `family = cumulative`. Here's how to fit the intercepts-only model.
 
-```{r b11.1}
+```{r}
+#| label: b11.1
+
 # define the start values
-inits <- list(`Intercept[1]` = -2,
-              `Intercept[2]` = -1,
-              `Intercept[3]` = 0,
-              `Intercept[4]` = 1,
-              `Intercept[5]` = 2,
-              `Intercept[6]` = 2.5)
+inits <- list(
+  `Intercept[1]` = -2,
+  `Intercept[2]` = -1,
+  `Intercept[3]` = 0,
+  `Intercept[4]` = 1,
+  `Intercept[5]` = 2,
+  `Intercept[6]` = 2.5
+)
 
 inits_list <- list(inits, inits)
 
 b11.1 <- brm(
-  data = d, 
+  data = d,
   family = cumulative,
   response ~ 1,
   prior(normal(0, 10), class = Intercept),
-  iter = 2000, warmup = 1000, cores = 2, chains = 2,
-  init = inits_list,  # here we add our start values
+  iter = 2000,
+  warmup = 1000,
+  cores = 2,
+  chains = 2,
+  init = inits_list, # here we add our start values
   seed = 11,
-  file = "fits/b11.01")
+  file = "fits/b11.01"
+)
 ```
 
 McElreath needed to include the `depth=2` argument in the `rethinking::precis()` function to show the threshold parameters from his `m11.1stan` model (R code 11.8). With a `brm()` fit, we just use `print()` or `summary()` as usual.
@@ -234,28 +291,33 @@ What McElreath's `m11.1stan` summary termed `cutpoints[k]`, our brms summary ter
 Recall we use the base-R `plogis()` function in place of McElreath's `logistic()` function to get these into the probability metric.
 
 ```{r}
-fixef(b11.1)[, -2] %>% 
+fixef(b11.1)[, -2] %>%
   plogis()
 ```
 
 But recall that the posterior $\textit{SD}$ (i.e., the 'Est.Error' values) are not valid using that approach. If you really care about them, you'll need to work with the `as_draws_df()` function.
 
-```{r, message = F, warning = F}
-as_draws_df(b11.1) %>% 
-  select(starts_with("b_")) %>% 
-  mutate_all(plogis) %>% 
-  gather() %>% 
-  group_by(key) %>% 
-  summarise(mean = mean(value),
-            sd   = sd(value),
-            ll   = quantile(value, probs = .025),
-            ul   = quantile(value, probs = .975))
+```{r}
+#| message: false
+#| warning: false
+
+as_draws_df(b11.1) %>%
+  select(starts_with("b_")) %>%
+  mutate_all(plogis) %>%
+  gather() %>%
+  group_by(key) %>%
+  summarise(
+    mean = mean(value),
+    sd = sd(value),
+    ll = quantile(value, probs = .025),
+    ul = quantile(value, probs = .975)
+  )
 ```
 
 And just to confirm, those posterior means are centered right around the `cum_pr_k` we computed for Figure 11.2.
 
 ```{r}
-d_plot %>% 
+d_plot %>%
   select(response, cum_pr_k)
 ```
 
@@ -279,12 +341,14 @@ logistic <- function(x) {
 
 # now we get down to it
 dordlogit <- function(x, phi, a, log = FALSE) {
-  a  <- c(as.numeric(a), Inf)
-  p  <- logistic(a[x] - phi)
+  a <- c(as.numeric(a), Inf)
+  p <- logistic(a[x] - phi)
   na <- c(-Inf, a)
   np <- logistic(na[x] - phi)
-  p  <- p - np
-  if (log == TRUE) p <- log(p)
+  p <- p - np
+  if (log == TRUE) {
+    p <- log(p)
+  }
   p
 }
 ```
@@ -302,15 +366,13 @@ Next, as McElreath further noted on page 338, "these probabilities imply an aver
 ```{r}
 sum(pk * (1:7))
 ```
- 
+
 I found that a bit abstract. Here's the thing in a more elaborate tibble format.
 
 ```{r}
-(
-  explicit_example <- tibble(probability_of_a_response = pk) %>%
+(explicit_example <- tibble(probability_of_a_response = pk) %>%
   mutate(the_response = 1:7) %>%
-  mutate(their_product = probability_of_a_response * the_response)
-)
+  mutate(their_product = probability_of_a_response * the_response))
 
 explicit_example %>%
   summarise(average_outcome_value = sum(their_product))
@@ -320,17 +382,25 @@ explicit_example %>%
 
 This made me wonder how this would compare if we were lazy and ignored the categorical nature of the `response`. Here we refit the model with the typical Gaussian likelihood.
 
-```{r b11.1b}
+```{r}
+#| label: b11.1b
+
 b11.1b <- brm(
-  data = d, 
+  data = d,
   family = gaussian,
   response ~ 1,
   # in this case, 4 (i.e., the middle response) seems to be the conservative place to put the mean
-  prior = c(prior(normal(4, 10), class = Intercept),
-            prior(cauchy(0, 1), class = sigma)),
-  iter = 2000, warmup = 1000, cores = 4, chains = 4,
+  prior = c(
+    prior(normal(4, 10), class = Intercept),
+    prior(cauchy(0, 1), class = sigma)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  cores = 4,
+  chains = 4,
   seed = 11,
-  file = "fits/b11.01b")
+  file = "fits/b11.01b"
+)
 ```
 
 Check the summary.
@@ -355,49 +425,70 @@ sum(pk * (1:7))
 
 So the rule is we *subtract the linear model from each intercept*. "This way, a positive $\beta$ value indicates that an increase in the predictor variable $x$ results in an increase in the average response" (p. 338). Let's fit our multivariable models.
 
-```{r b11.2}
+```{r}
+#| label: b11.2
+
 # start values for b11.2
-inits <- list(`Intercept[1]` = -1.9,
-              `Intercept[2]` = -1.2,
-              `Intercept[3]` = -0.7,
-              `Intercept[4]` =  0.2,
-              `Intercept[5]` =  0.9,
-              `Intercept[6]` =  1.8,
-              action         =  0,
-              intention      =  0,
-              contact        =  0)
+inits <- list(
+  `Intercept[1]` = -1.9,
+  `Intercept[2]` = -1.2,
+  `Intercept[3]` = -0.7,
+  `Intercept[4]` = 0.2,
+  `Intercept[5]` = 0.9,
+  `Intercept[6]` = 1.8,
+  action = 0,
+  intention = 0,
+  contact = 0
+)
 
 b11.2 <- brm(
-  data = d, 
+  data = d,
   family = cumulative,
   response ~ 1 + action + intention + contact,
-  prior = c(prior(normal(0, 10), class = Intercept),
-            prior(normal(0, 10), class = b)),
-  iter = 2000, warmup = 1000, cores = 2, chains = 2,
+  prior = c(
+    prior(normal(0, 10), class = Intercept),
+    prior(normal(0, 10), class = b)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  cores = 2,
+  chains = 2,
   init = list(inits, inits),
   seed = 11,
-  file = "fits/b11.02")
+  file = "fits/b11.02"
+)
 
 # start values for b11.3
-inits <- list(`Intercept[1]`      = -1.9,
-              `Intercept[2]`      = -1.2,
-              `Intercept[3]`      = -0.7,
-              `Intercept[4]`      =  0.2,
-              `Intercept[5]`      =  0.9,
-              `Intercept[6]`      =  1.8,
-              action              =  0,
-              intention           =  0,
-              contact             =  0,
-              `action:intention`  =  0,
-              `contact:intention` =  0)
+inits <- list(
+  `Intercept[1]` = -1.9,
+  `Intercept[2]` = -1.2,
+  `Intercept[3]` = -0.7,
+  `Intercept[4]` = 0.2,
+  `Intercept[5]` = 0.9,
+  `Intercept[6]` = 1.8,
+  action = 0,
+  intention = 0,
+  contact = 0,
+  `action:intention` = 0,
+  `contact:intention` = 0
+)
 
 b11.3 <- update(
   b11.2,
-  formula = response ~ 1 + action + intention + contact + action:intention + contact:intention,
-  iter = 2000, warmup = 1000, cores = 2, chains = 2,
+  formula = response ~ 1 +
+    action +
+    intention +
+    contact +
+    action:intention +
+    contact:intention,
+  iter = 2000,
+  warmup = 1000,
+  cores = 2,
+  chains = 2,
   init = list(inits, inits),
   seed = 11,
-  file = "fits/b11.03")
+  file = "fits/b11.03"
+)
 ```
 
 We don't have a `coeftab()` function in brms like for rethinking. But as we did in @sec-Comparing-estimates, we can reproduce it with help from the `posterior::summarise_draws()` function and a bit of data wrangling.
@@ -405,21 +496,21 @@ We don't have a `coeftab()` function in brms like for rethinking. But as we did 
 ```{r}
 # make a custom helper function
 get_summary <- function(fit) {
-  fit %>% 
+  fit %>%
     posterior::summarise_draws(mean) %>%
-    filter(variable != "lprior") %>% 
+    filter(variable != "lprior") %>%
     filter(variable != "lp__")
 }
 
 # wrangle
-tibble(model = str_c("b11.", 1:3)) %>% 
-  mutate(fit = purrr::map(model, get)) %>% 
-  mutate(mean = purrr::map(fit, get_summary)) %>% 
-  select(-fit) %>% 
-  unnest(mean) %>% 
-  select(variable, mean, model) %>% 
-  spread(key = model, value = mean) %>% 
-  mutate_if(is.double, round, digits = 2) %>% 
+tibble(model = str_c("b11.", 1:3)) %>%
+  mutate(fit = purrr::map(model, get)) %>%
+  mutate(mean = purrr::map(fit, get_summary)) %>%
+  select(-fit) %>%
+  unnest(mean) %>%
+  select(variable, mean, model) %>%
+  spread(key = model, value = mean) %>%
+  mutate_if(is.double, round, digits = 2) %>%
   # this last step isn't necessary, but it orders the rows to match the text
   slice(c(6:11, 1, 4, 3, 2, 5))
 ```
@@ -437,31 +528,32 @@ b11.3 <- add_criterion(b11.3, criterion = "waic")
 Now compare the models.
 
 ```{r}
-loo_compare(b11.1, b11.2, b11.3, criterion = "waic") %>% 
+loo_compare(b11.1, b11.2, b11.3, criterion = "waic") %>%
   print(simplify = F)
 ```
 
 Here are the WAIC weights.
 
-```{r model_weights_b11.1_through_b11.3, cache = T}
-model_weights(b11.1, b11.2, b11.3, weights = "waic") %>% 
+```{r}
+#| cache: true
+#| label: model_weights_b11.1_through_b11.3
+
+model_weights(b11.1, b11.2, b11.3, weights = "waic") %>%
   round(digits = 3)
 ```
 
 McElreath made Figure 11.3 by extracting the samples of his `m11.3`, saving them as `post`, and working some hairy base R `plot()` code. We'll take a different route and use `brms::fitted()`. This will take substantial data wrangling, but hopefully it'll be instructive. Let's first take a look at the initial `fitted()` output for the beginnings of Figure 11.3.a.
 
-```{r, warning = F, message = F}
-nd <- tibble(action    = 0,
-             contact   = 0, 
-             intention = 0:1)
+```{r}
+#| warning: false
+#| message: false
+
+nd <- tibble(action = 0, contact = 0, intention = 0:1)
 
 max_iter <- 100
 
-fitted(b11.3,
-       newdata = nd, 
-       draw_ids = 1:max_iter,
-       summary = F) %>% 
-  data.frame() %>% 
+fitted(b11.3, newdata = nd, draw_ids = 1:max_iter, summary = F) %>%
+  data.frame() %>%
   glimpse()
 ```
 
@@ -469,176 +561,200 @@ Hopefully by now it's clear why we needed the `nd` tibble, which we made use of 
 
 Now we know what we have in hand, it's just a matter of careful wrangling to get those probabilities into a more useful format to feed into ggplot2. I've extensively annotated the code, below. If you lose track of what happens in a given step, just run the code up till that point. Go step by step.
 
-```{r, fig.width = 2.5, fig.height = 3.5}
-nd <- tibble(action    = 0,
-             contact   = 0, 
-             intention = 0:1)
+```{r}
+#| fig-width: 2.5
+#| fig-height: 3.5
+
+nd <- tibble(action = 0, contact = 0, intention = 0:1)
 
 max_iter <- 100
 
-fitted(b11.3,
-       newdata = nd, 
-       draw_ids = 1:max_iter,
-       summary = F) %>% 
+fitted(b11.3, newdata = nd, draw_ids = 1:max_iter, summary = F) %>%
   data.frame() %>%
   # we need an variable to index which posterior iteration we're working with
-  mutate(iter = 1:max_iter) %>% 
+  mutate(iter = 1:max_iter) %>%
   # convert the data to the long format
   gather(key, pk, -iter) %>%
   # drop the `X` prefix
   mutate(key = str_remove(key, "X")) %>%
-  # extract the `intention` and `response` information out of the `key` vector and 
+  # extract the `intention` and `response` information out of the `key` vector and
   # spread it into two vectors.
-  separate(key, into = c("intention", "rating")) %>% 
+  separate(key, into = c("intention", "rating")) %>%
   # that step produced two character vectors. they’ll be more useful as numbers
-  mutate(intention = intention %>% as.double(),
-         rating    = rating    %>% as.double()) %>%
+  mutate(
+    intention = intention %>% as.double(),
+    rating = rating %>% as.double()
+  ) %>%
   # here we convert `intention` into its proper 0:1 metric
-  mutate(intention = intention -1) %>%
+  mutate(intention = intention - 1) %>%
   # this step is based on McElreath's R code 11.10 on page 338
-  mutate(`pk:rating` = pk * rating) %>% 
+  mutate(`pk:rating` = pk * rating) %>%
   # I'm not sure how to succinctly explain this. you’re just going to have to trust me
-  group_by(iter, intention) %>% 
+  group_by(iter, intention) %>%
   # this is very important for the next step.
-  arrange(iter, intention, rating) %>% 
-  # here we take our `pk` values and make cumulative sums. why? take a long hard look at Figure 11.2. 
-  mutate(probability = cumsum(pk)) %>% 
+  arrange(iter, intention, rating) %>%
+  # here we take our `pk` values and make cumulative sums. why? take a long hard look at Figure 11.2.
+  mutate(probability = cumsum(pk)) %>%
   # `rating == 7` is unnecessary. these `probability` values are by definition 1
-  filter(rating < 7) %>% 
-  
-  ggplot(aes(x = intention, y = probability, 
-             color = probability)) +
-  geom_line(aes(group = interaction(iter, rating)),
-            alpha = 1/10) +
+  filter(rating < 7) %>%
+
+  ggplot(aes(x = intention, y = probability, color = probability)) +
+  geom_line(aes(group = interaction(iter, rating)), alpha = 1 / 10) +
   # note how we made a new data object for `geom_text()`
-  geom_text(data = tibble(text        = 1:7,
-                          intention   = seq(from = .9, to = .1, length.out = 7),
-                          probability = c(.05, .12, .20, .35, .53, .71, .87)),
-            aes(label = text),
-            size = 3) +
+  geom_text(
+    data = tibble(
+      text = 1:7,
+      intention = seq(from = .9, to = .1, length.out = 7),
+      probability = c(.05, .12, .20, .35, .53, .71, .87)
+    ),
+    aes(label = text),
+    size = 3
+  ) +
   scale_x_continuous("intention", breaks = 0:1) +
   scale_y_continuous(breaks = c(0, .5, 1), limits = c(0, 1)) +
-  scale_color_gradient(low  = canva_pal("Green fields")(4)[4],
-                       high = canva_pal("Green fields")(4)[1]) +
+  scale_color_gradient(
+    low = canva_pal("Green fields")(4)[4],
+    high = canva_pal("Green fields")(4)[1]
+  ) +
   labs(subtitle = "action = 0,\ncontact = 0") +
   theme_hc() +
-  theme(axis.ticks = element_blank(),
-        legend.position = "none",
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    axis.ticks = element_blank(),
+    legend.position = "none",
+    plot.background = element_rect(fill = "grey92")
+  )
 ```
 
 Boom!
 
-Okay, that pile of code is a bit of a mess and you're not going to want to repeatedly cut and paste all that. Let's condense it into a homemade function, `make_Figure_11.3_data()`. 
+Okay, that pile of code is a bit of a mess and you're not going to want to repeatedly cut and paste all that. Let's condense it into a homemade function, `make_Figure_11.3_data()`.
 
 ```{r}
 make_Figure_11.3_data <- function(action, contact, max_iter) {
-  nd <- tibble(action    = action,
-               contact   = contact, 
-               intention = 0:1)
-  
+  nd <- tibble(action = action, contact = contact, intention = 0:1)
+
   max_iter <- max_iter
-  
-  fitted(b11.3, 
-         newdata = nd, 
-         draw_ids = 1:max_iter,
-         summary = F) %>% 
+
+  fitted(b11.3, newdata = nd, draw_ids = 1:max_iter, summary = F) %>%
     data.frame() %>%
-    mutate(iter = 1:max_iter) %>% 
+    mutate(iter = 1:max_iter) %>%
     gather(key, pk, -iter) %>%
     mutate(key = str_remove(key, "X")) %>%
-    separate(key, into = c("intention", "rating")) %>% 
-    mutate(intention = intention %>% as.double(),
-           rating    = rating    %>% as.double()) %>%
-    mutate(intention = intention -1) %>%
-    mutate(`pk:rating` = pk * rating) %>% 
-    group_by(iter, intention) %>% 
-    arrange(iter, intention, rating) %>% 
-    mutate(probability = cumsum(pk)) %>% 
+    separate(key, into = c("intention", "rating")) %>%
+    mutate(
+      intention = intention %>% as.double(),
+      rating = rating %>% as.double()
+    ) %>%
+    mutate(intention = intention - 1) %>%
+    mutate(`pk:rating` = pk * rating) %>%
+    group_by(iter, intention) %>%
+    arrange(iter, intention, rating) %>%
+    mutate(probability = cumsum(pk)) %>%
     filter(rating < 7)
 }
 ```
 
 Now we'll use our sweet homemade function to make our plots.
 
-```{r, fig.width = 7, fig.height = 4, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+#| fig-width: 7
+#| fig-height: 4
+
 # Figure 11.3.a
-p1 <- make_Figure_11.3_data(action   = 0, 
-                            contact  = 0, 
-                            max_iter = 100) %>% 
-  
-  ggplot(aes(x = intention, y = probability,
-             color = probability)) +
-  geom_line(aes(group = interaction(iter, rating)),
-            alpha = 1/10) +
-  geom_text(data = tibble(text        = 1:7,
-                          intention   = seq(from = .9, to = .1, length.out = 7),
-                          probability = c(.05, .12, .20, .35, .53, .71, .87)),
-            aes(label = text),
-            size = 3) +
+p1 <- make_Figure_11.3_data(action = 0, contact = 0, max_iter = 100) %>%
+
+  ggplot(aes(x = intention, y = probability, color = probability)) +
+  geom_line(aes(group = interaction(iter, rating)), alpha = 1 / 10) +
+  geom_text(
+    data = tibble(
+      text = 1:7,
+      intention = seq(from = .9, to = .1, length.out = 7),
+      probability = c(.05, .12, .20, .35, .53, .71, .87)
+    ),
+    aes(label = text),
+    size = 3
+  ) +
   scale_x_continuous("intention", breaks = 0:1) +
   scale_y_continuous(breaks = c(0, .5, 1), limits = c(0, 1)) +
-  scale_color_gradient(low  = canva_pal("Green fields")(4)[4],
-                       high = canva_pal("Green fields")(4)[1]) +
+  scale_color_gradient(
+    low = canva_pal("Green fields")(4)[4],
+    high = canva_pal("Green fields")(4)[1]
+  ) +
   labs(subtitle = "action = 0,\ncontact = 0") +
   theme_hc() +
-  theme(axis.ticks = element_blank(),
-        legend.position = "none",
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    axis.ticks = element_blank(),
+    legend.position = "none",
+    plot.background = element_rect(fill = "grey92")
+  )
 
 # Figure 11.3.b
-p2 <- make_Figure_11.3_data(action   = 1, 
-                            contact  = 0, 
-                            max_iter = 100) %>% 
-  
-  ggplot(aes(x = intention, y = probability,
-             color = probability)) +
-  geom_line(aes(group = interaction(iter, rating)),
-            alpha = 1/10) +
-  geom_text(data = tibble(text        = 1:7,
-                          intention   = seq(from = .9, to = .1, length.out = 7),
-                          probability = c(.12, .24, .35, .50, .68, .80, .92)),
-            aes(label = text),
-            size = 3) +
+p2 <- make_Figure_11.3_data(action = 1, contact = 0, max_iter = 100) %>%
+
+  ggplot(aes(x = intention, y = probability, color = probability)) +
+  geom_line(aes(group = interaction(iter, rating)), alpha = 1 / 10) +
+  geom_text(
+    data = tibble(
+      text = 1:7,
+      intention = seq(from = .9, to = .1, length.out = 7),
+      probability = c(.12, .24, .35, .50, .68, .80, .92)
+    ),
+    aes(label = text),
+    size = 3
+  ) +
   scale_x_continuous("intention", breaks = 0:1) +
   scale_y_continuous(breaks = c(0, .5, 1), limits = c(0, 1)) +
-  scale_color_gradient(low  = canva_pal("Green fields")(4)[4],
-                       high = canva_pal("Green fields")(4)[1]) +
+  scale_color_gradient(
+    low = canva_pal("Green fields")(4)[4],
+    high = canva_pal("Green fields")(4)[1]
+  ) +
   labs(subtitle = "action = 1,\ncontact = 0") +
   theme_hc() +
-  theme(axis.ticks = element_blank(),
-        legend.position = "none",
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    axis.ticks = element_blank(),
+    legend.position = "none",
+    plot.background = element_rect(fill = "grey92")
+  )
 
 # Figure 11.3.c
-p3 <- make_Figure_11.3_data(action   = 0, 
-                            contact  = 1, 
-                            max_iter = 100) %>% 
-  
-  ggplot(aes(x = intention, y = probability,
-             color = probability)) +
-  geom_line(aes(group = interaction(iter, rating)),
-            alpha = 1/10) +
-  geom_text(data = tibble(text        = 1:7,
-                          intention   = seq(from = .9, to = .1, length.out = 7),
-                          probability = c(.15, .34, .44, .56, .695, .8, .92)),
-            aes(label = text),
-            size = 3) +
+p3 <- make_Figure_11.3_data(action = 0, contact = 1, max_iter = 100) %>%
+
+  ggplot(aes(x = intention, y = probability, color = probability)) +
+  geom_line(aes(group = interaction(iter, rating)), alpha = 1 / 10) +
+  geom_text(
+    data = tibble(
+      text = 1:7,
+      intention = seq(from = .9, to = .1, length.out = 7),
+      probability = c(.15, .34, .44, .56, .695, .8, .92)
+    ),
+    aes(label = text),
+    size = 3
+  ) +
   scale_x_continuous("intention", breaks = 0:1) +
   scale_y_continuous(breaks = c(0, .5, 1), limits = c(0, 1)) +
-  scale_color_gradient(low  = canva_pal("Green fields")(4)[4],
-                       high = canva_pal("Green fields")(4)[1]) +
+  scale_color_gradient(
+    low = canva_pal("Green fields")(4)[4],
+    high = canva_pal("Green fields")(4)[1]
+  ) +
   labs(subtitle = "action = 0,\ncontact = 1") +
   theme_hc() +
-  theme(axis.ticks = element_blank(),
-        legend.position = "none",
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    axis.ticks = element_blank(),
+    legend.position = "none",
+    plot.background = element_rect(fill = "grey92")
+  )
 
 # here we combine them with patchwork
-p1 + p2 + p3 + 
-  plot_annotation(title = "Posterior predictions of the interaction model:",
-                  subtitle = "Here we're focusing on the parameters.",
-                  theme = theme(plot.background = element_rect(fill = "grey92")))
+p1 +
+  p2 +
+  p3 +
+  plot_annotation(
+    title = "Posterior predictions of the interaction model:",
+    subtitle = "Here we're focusing on the parameters.",
+    theme = theme(plot.background = element_rect(fill = "grey92"))
+  )
 ```
 
 If you'd like to learn more about using cumulative probabilities to model ordinal data in brms, check out Bürkner and Vuorre's [-@burknerOrdinalRegressionModels2019] [*Ordinal regression models in psychology: A tutorial*](https://psyarxiv.com/x8swp/) and its [repository](https://osf.io/cu8jv/) on the Open Science Framework. Also check out [Chapter 23](https://solomon.quarto.pub/dbda2/22.html) of my [-@kurzDoingBayesianDataAnalysis2026] sister project, [*Doing Bayesian data analysis in brms and the tidyverse*](https://solomon.quarto.pub/dbda2/), were we model ordinal data with a series of cumulative probit models.
@@ -649,29 +765,26 @@ I have a lot of respect for McElreath. But man, Figure 11.3 is the worst. I'm in
 
 ```{r}
 make_alternative_data <- function(action, contact, max_iter) {
-  nd <- tibble(action    = action,
-               contact   = contact, 
-               intention = 0:1)
-  
+  nd <- tibble(action = action, contact = contact, intention = 0:1)
+
   max_iter <- max_iter
-  
-  fitted(b11.3, 
-         newdata = nd, 
-         draw_ids = 1:max_iter,
-         summary = F) %>% 
+
+  fitted(b11.3, newdata = nd, draw_ids = 1:max_iter, summary = F) %>%
     data.frame() %>%
-    mutate(iter = 1:max_iter) %>% 
+    mutate(iter = 1:max_iter) %>%
     gather(key, pk, -iter) %>%
     mutate(key = str_remove(key, "X")) %>%
-    separate(key, into = c("intention", "rating")) %>% 
-    mutate(intention = intention %>% as.double(),
-           rating    = rating    %>% as.double()) %>%
-    mutate(intention = intention -1) %>%
-    mutate(`pk:rating` = pk * rating) %>% 
-    group_by(iter, intention) %>% 
-    
+    separate(key, into = c("intention", "rating")) %>%
+    mutate(
+      intention = intention %>% as.double(),
+      rating = rating %>% as.double()
+    ) %>%
+    mutate(intention = intention - 1) %>%
+    mutate(`pk:rating` = pk * rating) %>%
+    group_by(iter, intention) %>%
+
     # everything above this point is identical to the previous custom function.
-    # all we do is replace the last few lines with this one line of code. 
+    # all we do is replace the last few lines with this one line of code.
     summarise(mean_rating = sum(`pk:rating`))
 }
 ```
@@ -681,47 +794,51 @@ Our handy homemade `make_alternative_data()` function works very much like its p
 ```{r}
 geom_figure11.3 <- function(subtitle, ...) {
   list(
-    geom_line(alpha = 1/10, color = canva_pal("Green fields")(4)[1]),
+    geom_line(alpha = 1 / 10, color = canva_pal("Green fields")(4)[1]),
     scale_x_continuous("intention", breaks = 0:1),
     scale_y_continuous("response", breaks = 1:7, limits = c(1, 7)),
     labs(subtitle = subtitle),
     theme_hc(),
-    theme(axis.ticks = element_blank(),
-          legend.position = "none",
-          plot.background = element_rect(fill = "grey92"))
+    theme(
+      axis.ticks = element_blank(),
+      legend.position = "none",
+      plot.background = element_rect(fill = "grey92")
+    )
   )
 }
 ```
 
 Now we'll use our two custom functions, `make_alternative_data()` to make the data and `geom_figure11.3()` to specify most of the ggplot2 components, to plot our alternative to Figure 11.3.
 
-```{r, fig.width = 7, fig.height = 4, message = F}
+```{r}
+#| message: false
+#| fig-width: 7
+#| fig-height: 4
+
 # alternative to Figure 11.3.a
-p1 <- make_alternative_data(action   = 0, 
-                            contact  = 0, 
-                            max_iter = 100) %>% 
+p1 <- make_alternative_data(action = 0, contact = 0, max_iter = 100) %>%
   ggplot(aes(x = intention, y = mean_rating, group = iter)) +
   geom_figure11.3(subtitle = "action = 0,\ncontact = 0")
 
 # alternative to Figure 11.3.b
-p2 <- make_alternative_data(action   = 1, 
-                            contact  = 0, 
-                            max_iter = 100) %>% 
+p2 <- make_alternative_data(action = 1, contact = 0, max_iter = 100) %>%
   ggplot(aes(x = intention, y = mean_rating, group = iter)) +
   geom_figure11.3(subtitle = "action = 1,\ncontact = 0")
 
 # alternative to Figure 11.3.c
-p3 <- make_alternative_data(action   = 0, 
-                            contact  = 1, 
-                            max_iter = 100) %>% 
+p3 <- make_alternative_data(action = 0, contact = 1, max_iter = 100) %>%
   ggplot(aes(x = intention, y = mean_rating, group = iter)) +
   geom_figure11.3(subtitle = "action = 0,\ncontact = 1")
 
 # here we combine them with patchwork
-p1 + p2 + p3 + 
-  plot_annotation(title = "Posterior predictions of the interaction model:",
-                  subtitle = "This time we'll focus on the means.",
-                  theme = theme(plot.background = element_rect(fill = "grey92")))
+p1 +
+  p2 +
+  p3 +
+  plot_annotation(
+    title = "Posterior predictions of the interaction model:",
+    subtitle = "This time we'll focus on the means.",
+    theme = theme(plot.background = element_rect(fill = "grey92"))
+  )
 ```
 
 Finally; now those are plots I can sell in a clinical psychology journal! We did the right thing and used a sophisticated statistical model to treat the data appropriately, but we summarized the results in a way a substantive audience might understand them in.
@@ -748,8 +865,8 @@ Do you remember the monk data from back in @sec-Example-Exposure-and-the-offset?
 
 ```{r}
 # define parameters
-prob_drink <- 0.2  # 20% of days
-rate_work  <- 1    # average 1 manuscript per day
+prob_drink <- 0.2 # 20% of days
+rate_work <- 1 # average 1 manuscript per day
 
 # sample one year of production
 n <- 365
@@ -764,24 +881,40 @@ y <- (1 - drink) * rpois(n, rate_work)
 
 We'll put those data in a tidy tibble before plotting.
 
-```{r, fig.width = 5, fig.height = 3}
+```{r}
+#| fig-width: 5
+#| fig-height: 3
+
 d <- tibble(Y = y) %>%
-  arrange(Y) %>% 
-  mutate(zeros = c(rep("zeros_drink", times = sum(drink)),
-                   rep("zeros_work",  times = sum(y == 0 & drink == 0)),
-                   rep("nope",        times = n - sum(y == 0)))
-         ) 
-  
-  ggplot(data = d, aes(x = Y)) +
-  geom_histogram(aes(fill = zeros),
-                 binwidth = 1, linewidth = 1/10, color = "grey92") +
-  scale_fill_manual(values = c(canva_pal("Green fields")(4)[1], 
-                               canva_pal("Green fields")(4)[2], 
-                               canva_pal("Green fields")(4)[1])) +
+  arrange(Y) %>%
+  mutate(
+    zeros = c(
+      rep("zeros_drink", times = sum(drink)),
+      rep("zeros_work", times = sum(y == 0 & drink == 0)),
+      rep("nope", times = n - sum(y == 0))
+    )
+  )
+
+ggplot(data = d, aes(x = Y)) +
+  geom_histogram(
+    aes(fill = zeros),
+    binwidth = 1,
+    linewidth = 1 / 10,
+    color = "grey92"
+  ) +
+  scale_fill_manual(
+    values = c(
+      canva_pal("Green fields")(4)[1],
+      canva_pal("Green fields")(4)[2],
+      canva_pal("Green fields")(4)[1]
+    )
+  ) +
   xlab("Manuscripts completed") +
   theme_hc() +
-  theme(legend.position = "none",
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    legend.position = "none",
+    plot.background = element_rect(fill = "grey92")
+  )
 ```
 
 With these data, the likelihood of observing zero on `y`, (i.e., the likelihood zero manuscripts were completed on a given occasion) is
@@ -791,17 +924,17 @@ With these data, the likelihood of observing zero on `y`, (i.e., the likelihood 
                     & = p + (1 - p) \; \exp (- \lambda).
 \end{align*}
 
-And 
+And
 
 > since the Poisson likelihood of $y$ is $\Pr(y \mid \lambda) = \lambda^y \exp (- \lambda) / y!$, the likelihood of $y = 0$ is just $\exp(- \lambda)$. The above is just the mathematics for:
 >
->> *The probability of observing a zero is the probability that the monks didn't drink OR ($+$) the probability that the monks worked AND ($\times$) failed to finish anything*. 
+> > *The probability of observing a zero is the probability that the monks didn't drink OR ($+$) the probability that the monks worked AND ($\times$) failed to finish anything*.
 >
 > And the likelihood of a non-zero value $y$ is:
 >
 > \begin{align*}
 > \Pr(y \mid p, \lambda) & = \Pr(\text{drink} \mid p) (0) + \Pr(\text{work} \mid p) \Pr(y \mid \lambda) \\
->                     & = (1 - p) \frac {\lambda^y \; \exp (- \lambda)}{y!}
+> & = (1 - p) \frac {\lambda^y \; \exp (- \lambda)}{y!}
 > \end{align*}
 >
 > Since drinking monks never produce $y > 0$, the expression above is just the chance the monks both work $1 - p$, and finish $y$ manuscripts. (p. 344, *emphasis* in the original)
@@ -816,16 +949,21 @@ y_i & \sim \operatorname{ZIPoisson}(p_i, \lambda_i)\\
 
 One last thing to note is that in brms, $p_i$ is denoted `zi`. To fit a zero-inflated Poisson model with brms, make sure to specify the correct likelihood with `family = zero_inflated_poisson`. To use a non-default prior for `zi`, make sure to indicate `class = zi` within the `prior()` function.
 
-```{r b11.4}
+```{r}
+#| label: b11.4
+
 b11.4 <- brm(
-  data = d, 
+  data = d,
   family = zero_inflated_poisson,
   Y ~ 1,
-  prior = c(prior(normal(0, 10), class = Intercept),
-            prior(beta(2, 2), class = zi)),  # the brms default is beta(1, 1)
+  prior = c(
+    prior(normal(0, 10), class = Intercept),
+    prior(beta(2, 2), class = zi)
+  ), # the brms default is beta(1, 1)
   cores = 4,
   seed = 11,
-  file = "fits/b11.04") 
+  file = "fits/b11.04"
+)
 ```
 
 ```{r}
@@ -836,21 +974,29 @@ The zero-inflated Poisson is [parameterized in brms](https://cran.r-project.org/
 
 In the `prior` argument, we used `beta(2, 2)` for `zi` and also mentioned in the margin that the brms default is `beta(1, 1)`. The beta distribution ranges from 0 to 1, making it a natural distribution to use for priors on probabilities. To give you a sense of what those two versions of the beta look like, let's plot them.
 
-```{r, fig.width = 6, fig.height = 2.5}
-tibble(`zi prior`= seq(from = 0, to = 1, length.out = 50)) %>%
-  mutate(`beta(1, 1)` = dbeta(`zi prior`, 1, 1),
-         `beta(2, 2)` = dbeta(`zi prior`, 2, 2))  %>% 
-  gather(prior, density, -`zi prior`) %>% 
-  
+```{r}
+#| fig-width: 6
+#| fig-height: 2.5
+
+tibble(`zi prior` = seq(from = 0, to = 1, length.out = 50)) %>%
+  mutate(
+    `beta(1, 1)` = dbeta(`zi prior`, 1, 1),
+    `beta(2, 2)` = dbeta(`zi prior`, 2, 2)
+  ) %>%
+  gather(prior, density, -`zi prior`) %>%
+
   ggplot(aes(x = `zi prior`, ymin = 0, ymax = density)) +
   geom_ribbon(aes(fill = prior)) +
-  scale_fill_manual(values = c(canva_pal("Green fields")(4)[4],
-                               canva_pal("Green fields")(4)[2])) +
+  scale_fill_manual(
+    values = c(canva_pal("Green fields")(4)[4], canva_pal("Green fields")(4)[2])
+  ) +
   scale_x_continuous("prior for zi", breaks = c(0, .5, 1)) +
   scale_y_continuous(NULL, breaks = NULL) +
   theme_hc() +
-  theme(legend.position = "none",
-        plot.background = element_rect(fill = "grey92")) +
+  theme(
+    legend.position = "none",
+    plot.background = element_rect(fill = "grey92")
+  ) +
   facet_wrap(~prior)
 ```
 
@@ -872,36 +1018,44 @@ dzip <- function(x, p, lambda, log = TRUE) {
     p + (1 - p) * exp(-lambda),
     (1 - p) * dpois(x, lambda, log = FALSE)
   )
-  if (log == TRUE) ll <- log(ll)
+  if (log == TRUE) {
+    ll <- log(ll)
+  }
   ll
 }
 ```
 
 We can use McElreath's `dzip()` to do a posterior predictive check for our model. To work with our estimates for $p$ and $\lambda$ directly, we'll set `log = F`.
 
-```{r, fig.width = 5, fig.height = 3}
-p_b11.4      <- posterior_summary(b11.4)[2, 1]
+```{r}
+#| fig-width: 5
+#| fig-height: 3
+
+p_b11.4 <- posterior_summary(b11.4)[2, 1]
 lambda_b11.4 <- posterior_summary(b11.4)[1, 1] %>% exp()
 
-tibble(x = 0:4) %>% 
-  mutate(density = dzip(x = x, 
-                        p = p_b11.4, 
-                        lambda = lambda_b11.4, 
-                        log = F)) %>% 
-  
+tibble(x = 0:4) %>%
+  mutate(density = dzip(x = x, p = p_b11.4, lambda = lambda_b11.4, log = F)) %>%
+
   ggplot(aes(x = x, y = density)) +
   geom_col(fill = canva_pal("Green fields")(4)[4]) +
   xlab("Manuscripts completed") +
   theme_hc() +
-  theme(axis.ticks = element_blank(),
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    axis.ticks = element_blank(),
+    plot.background = element_rect(fill = "grey92")
+  )
 ```
 
 If you look up to the histogram we made at the beginning of this section, you'll see this isn't a terrible approximation.
 
 We can do something similar with the `brms::pp_check()` function. By setting `type = bars`, we'll get back a series of model-based simulations summarized by mean and error bars superimposed atop a histogram of the original data. With the `nsamples` argument, we indicated we wanted those mean and error bars to be based on 100 simulations.
 
-```{r, fig.width = 6, fig.height = 3, message = F}
+```{r}
+#| message: false
+#| fig-width: 6
+#| fig-height: 3
+
 # this helps us set our custom color scheme
 bayesplot::color_scheme_set(canva_pal("Green fields")(4)[c(1, 1, 1, 1, 4, 1)])
 
@@ -910,10 +1064,12 @@ set.seed(11)
 pp_check(b11.4, type = "bars", ndraws = 100) +
   scale_x_continuous(breaks = 0:7) +
   theme_hc() +
-  theme(axis.ticks = element_blank(),
-        legend.position = c(.91, .842),
-        legend.background = element_rect(fill = "transparent"),
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    axis.ticks = element_blank(),
+    legend.position = c(.91, .842),
+    legend.background = element_rect(fill = "transparent"),
+    plot.background = element_rect(fill = "grey92")
+  )
 ```
 
 Those mean and error bars suggest the model did a good job simulating data that resemble the original data.
@@ -951,18 +1107,31 @@ With $\mu$ and $\kappa$ in hand, we can even find the $\textit{SD}$ of a beta di
 $$\sigma = \sqrt{\mu (1 - \mu) / (\kappa + 1)}$$
 
 I explicate all this because McElreath's `pbar` is $\mu = \frac{\alpha}{\alpha + \beta}$ and his `theta` is $\kappa = \alpha + \beta$. This is great news because it means that we can understand what McElreath did with his `beta2()` function in terms of base R's `dbeta()` function. Which also means that we can understand the distribution of the beta parameters used in `brms::brm()`. To demonstrate, let's walk through McElreath's R code 11.25.
-          
-```{r, fig.width = 4, fig.height = 3}
-pbar  <- 0.5
+
+```{r}
+#| fig-width: 4
+#| fig-height: 3
+
+pbar <- 0.5
 theta <- 5
 
-ggplot(data = tibble(x = seq(from = 0, to = 1, by = .01)),
-       aes(x = x, ymin = 0, ymax = rethinking::dbeta2(x, pbar, theta))) +
+ggplot(
+  data = tibble(x = seq(from = 0, to = 1, by = .01)),
+  aes(x = x, ymin = 0, ymax = rethinking::dbeta2(x, pbar, theta))
+) +
   geom_ribbon(fill = canva_pal("Green fields")(4)[1]) +
   scale_x_continuous("probability space", breaks = c(0, .5, 1)) +
   scale_y_continuous(NULL, breaks = NULL) +
-  ggtitle(expression(The~beta~distribution),
-          subtitle = expression("Defined in terms of "*mu*" (i.e., pbar) and "*kappa*" (i.e., theta)")) +
+  ggtitle(
+    expression(The ~ beta ~ distribution),
+    subtitle = expression(
+      "Defined in terms of " *
+        mu *
+        " (i.e., pbar) and " *
+        kappa *
+        " (i.e., theta)"
+    )
+  ) +
   theme_hc() +
   theme(plot.background = element_rect(fill = "grey92"))
 ```
@@ -971,8 +1140,12 @@ In his [-@kruschkeDoingBayesianData2015] text, [*Doing Bayesian data analysis*](
 
 ```{r}
 betaABfromMeanKappa <- function(mean, kappa) {
-  if (mean <= 0 | mean >= 1) stop("must have 0 < mean < 1")
-  if (kappa <= 0) stop("kappa must be > 0")
+  if (mean <= 0 | mean >= 1) {
+    stop("must have 0 < mean < 1")
+  }
+  if (kappa <= 0) {
+    stop("kappa must be > 0")
+  }
   a <- mean * kappa
   b <- (1.0 - mean) * kappa
   return(list(a = a, b = b))
@@ -987,39 +1160,59 @@ betaABfromMeanKappa(mean = pbar, kappa = theta)
 
 And finally, we can double check that all of this works. Here's the same distribution but defined in terms of $\alpha$ and $\beta$.
 
-```{r, fig.width = 4, fig.height = 3}
-ggplot(data = tibble(x = seq(from = 0, to = 1, by = .01)),
-       aes(x = x, ymin = 0, ymax = dbeta(x, 2.5, 2.5))) +
+```{r}
+#| fig-width: 4
+#| fig-height: 3
+
+ggplot(
+  data = tibble(x = seq(from = 0, to = 1, by = .01)),
+  aes(x = x, ymin = 0, ymax = dbeta(x, 2.5, 2.5))
+) +
   geom_ribbon(fill = canva_pal("Green fields")(4)[4]) +
   scale_x_continuous("probability space", breaks = c(0, .5, 1)) +
   scale_y_continuous(NULL, breaks = NULL) +
-  ggtitle(expression(The~beta~distribution),
-          subtitle = expression("This time defined in terms of "*alpha*" and "*beta)) +
+  ggtitle(
+    expression(The ~ beta ~ distribution),
+    subtitle = expression(
+      "This time defined in terms of " * alpha * " and " * beta
+    )
+  ) +
   theme_hc() +
   theme(plot.background = element_rect(fill = "grey92"))
 ```
 
 McElreath encouraged us to "explore different values for `pbar` and `theta`" (p. 348). Here's a grid of plots with `pbar = c(.25, .5, .75)` and `theta = c(5, 10, 15)`.
 
-```{r, fig.width = 5, fig.height = 5}
+```{r}
+#| fig-width: 5
+#| fig-height: 5
+
 # data
-crossing(pbar  = c(.25, .5, .75),
-         theta = c(5, 15, 30)) %>% 
-  expand_grid(x = seq(from = 0, to = 1, length.out = 100)) %>% 
-  mutate(density = rethinking::dbeta2(x, pbar, theta),
-         mu      = str_c("mu == ", pbar %>% str_remove(., "0")),
-         kappa   = factor(str_c("kappa == ", theta), 
-                          levels = c("kappa == 30", "kappa == 15", "kappa == 5"))) %>% 
-  
+crossing(pbar = c(.25, .5, .75), theta = c(5, 15, 30)) %>%
+  expand_grid(x = seq(from = 0, to = 1, length.out = 100)) %>%
+  mutate(
+    density = rethinking::dbeta2(x, pbar, theta),
+    mu = str_c("mu == ", pbar %>% str_remove(., "0")),
+    kappa = factor(
+      str_c("kappa == ", theta),
+      levels = c("kappa == 30", "kappa == 15", "kappa == 5")
+    )
+  ) %>%
+
   # plot
   ggplot(aes(x = x, ymin = 0, ymax = density)) +
   geom_ribbon(fill = canva_pal("Green fields")(4)[4]) +
-  scale_x_continuous("probability space", 
-                     breaks = c(0, .5, 1), labels = c("0", ".5", "1")) +
+  scale_x_continuous(
+    "probability space",
+    breaks = c(0, .5, 1),
+    labels = c("0", ".5", "1")
+  ) +
   scale_y_continuous(NULL, labels = NULL) +
   theme_hc() +
-  theme(axis.ticks.y = element_blank(),
-        plot.background = element_rect(fill = "grey92")) +
+  theme(
+    axis.ticks.y = element_blank(),
+    plot.background = element_rect(fill = "grey92")
+  ) +
   facet_grid(kappa ~ mu, labeller = label_parsed)
 ```
 
@@ -1040,15 +1233,20 @@ Before we fit, we have an additional complication. The beta-binomial likelihood 
 
 Before we get carried away, let's load the data.
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 library(rethinking)
-data(UCBadmit) 
+data(UCBadmit)
 d <- UCBadmit
 ```
 
 Unload rethinking and load brms.
 
-```{r, message = F}
+```{r}
+#| message: false
+
 rm(UCBadmit)
 detach(package:rethinking, unload = T)
 library(brms)
@@ -1058,10 +1256,13 @@ I'm not going to go into great detail explaining the ins and outs of making cust
 
 ```{r}
 beta_binomial2 <- custom_family(
-  "beta_binomial2", dpars = c("mu", "phi"),
+  "beta_binomial2",
+  dpars = c("mu", "phi"),
   links = c("logit", "log"),
-  lb = c(0, 0), ub = c(1, NA),
-  type = "int", vars = "vint1[n]"
+  lb = c(0, 0),
+  ub = c(1, NA),
+  type = "int",
+  vars = "vint1[n]"
 )
 
 stan_funs <- "
@@ -1086,17 +1287,25 @@ Second, we've become accustomed to using the `y | trials() ~ ...` syntax when de
 >
 > We now have all components together to fit our custom beta-binomial model:
 
-```{r b11.5}
+```{r}
+#| label: b11.5
+
 b11.5 <- brm(
-  data = d, 
-  family = beta_binomial2,  # here's our custom likelihood
+  data = d,
+  family = beta_binomial2, # here's our custom likelihood
   admit | vint(applications) ~ 1,
-  prior = c(prior(normal(0, 2), class = Intercept),
-            prior(exponential(1), class = phi)),
-  iter = 4000, warmup = 1000, cores = 2, chains = 2,
-  stanvars = stanvars,  # note our `stanvars`
+  prior = c(
+    prior(normal(0, 2), class = Intercept),
+    prior(exponential(1), class = phi)
+  ),
+  iter = 4000,
+  warmup = 1000,
+  cores = 2,
+  chains = 2,
+  stanvars = stanvars, # note our `stanvars`
   seed = 11,
-  file = "fits/b11.05")
+  file = "fits/b11.05"
+)
 ```
 
 Success, our results look a lot like those in the text!
@@ -1115,9 +1324,11 @@ head(post)
 
 Here's our median and percentile-based 95% interval.
 
-```{r, warning = F}
-post %>% 
-  tidybayes::median_qi(plogis(b_Intercept)) %>% 
+```{r}
+#| warning: false
+
+post %>%
+  tidybayes::median_qi(plogis(b_Intercept)) %>%
   mutate_if(is.double, round, digits = 3)
 ```
 
@@ -1126,10 +1337,10 @@ To stay within the tidyverse while making the many thin lines in Figure 11.5.a, 
 ```{r}
 set.seed(11)
 
-lines <- post %>% 
-  mutate(p_bar = plogis(b_Intercept)) %>% 
-  slice_sample(n = 100) %>% 
-  expand_grid(x = seq(from = 0, to = 1, by = .001)) %>% 
+lines <- post %>%
+  mutate(p_bar = plogis(b_Intercept)) %>%
+  slice_sample(n = 100) %>%
+  expand_grid(x = seq(from = 0, to = 1, by = .001)) %>%
   mutate(density = rethinking::dbeta2(x, prob = p_bar, theta = phi))
 
 str(lines)
@@ -1137,15 +1348,23 @@ str(lines)
 
 All that was just for the thin lines. To make the thicker line for the posterior mean, we'll get tricky with `stat_function()`.
 
-```{r, fig.width = 4, fig.height = 3.5}
-lines %>% 
-  ggplot(aes(x = x, y = density)) + 
-  stat_function(fun = rethinking::dbeta2,
-                args = list(prob = mean(plogis(post$b_Intercept)),
-                            theta = mean(post$phi)),
-                linewidth = 1.5, color = canva_pal("Green fields")(4)[4]) +
-  geom_line(aes(group = .draw ),
-            alpha = .2, color = canva_pal("Green fields")(4)[4]) +
+```{r}
+#| fig-width: 4
+#| fig-height: 3.5
+
+lines %>%
+  ggplot(aes(x = x, y = density)) +
+  stat_function(
+    fun = rethinking::dbeta2,
+    args = list(prob = mean(plogis(post$b_Intercept)), theta = mean(post$phi)),
+    linewidth = 1.5,
+    color = canva_pal("Green fields")(4)[4]
+  ) +
+  geom_line(
+    aes(group = .draw),
+    alpha = .2,
+    color = canva_pal("Green fields")(4)[4]
+  ) +
   scale_y_continuous(NULL, breaks = NULL, limits = c(0, 3)) +
   xlab("probability admit") +
   theme_hc() +
@@ -1156,28 +1375,32 @@ There are other ways to do this. For ideas, check out my blog post, [*Make rotat
 
 Before we can do our variant of Figure 11.5.b, we'll need to define a few more custom functions. The `log_lik_beta_binomial2()` and `posterior_predict_beta_binomial2()` functions are required for `brms::predict()` to work with our `family = beta_binomial2` brmfit object. Similarly, `posterior_epred_beta_binomial2()` is required for `brms::fitted()` to work properly. And before all that, we need to throw in a line with the `expose_functions()` function. Just go with it.
 
-```{r, results = 'hide', warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+#| results: "hide"
+
 expose_functions(b11.5, vectorize = TRUE)
 
 # required to use `predict()`
 log_lik_beta_binomial2 <- function(i, prep) {
-  mu     <- brms::get_dpar(prep, "mu", i = i)
-  phi    <- brms::get_dpar(prep, "phi", i = i)
+  mu <- brms::get_dpar(prep, "mu", i = i)
+  phi <- brms::get_dpar(prep, "phi", i = i)
   trials <- prep$data$vint1[i]
-  y      <- prep$data$Y[i]
+  y <- prep$data$Y[i]
   beta_binomial2_lpmf(y, mu, phi, trials)
 }
 
 posterior_predict_beta_binomial2 <- function(i, prep, ...) {
-  mu     <- brms::get_dpar(prep, "mu", i = i)
-  phi    <- brms::get_dpar(prep, "phi", i = i)
+  mu <- brms::get_dpar(prep, "mu", i = i)
+  phi <- brms::get_dpar(prep, "phi", i = i)
   trials <- prep$data$vint1[i]
   beta_binomial2_rng(mu, phi, trials)
 }
 
 # required to use `fitted()`
 posterior_epred_beta_binomial2 <- function(prep) {
-  mu     <- brms::get_dpar(prep, "mu")
+  mu <- brms::get_dpar(prep, "mu")
   trials <- prep$data$vint1
   trials <- matrix(trials, nrow = nrow(mu), ncol = ncol(mu), byrow = TRUE)
   mu * trials
@@ -1197,79 +1420,105 @@ With those intermediary steps out of the way, we're ready to make Figure 11.5.b.
 load("sims/p_b11.5.rda")
 ```
 
-```{r, fig.width = 4, fig.height = 3.5, eval = F}
+```{r}
+#| eval: false
+#| fig-width: 4
+#| fig-height: 3.5
+
 # the prediction intervals
 set.seed(11)
 predict(b11.5) %>%
-  data.frame() %>% 
-  transmute(ll = Q2.5,
-            ul = Q97.5) %>%
+  data.frame() %>%
+  transmute(ll = Q2.5, ul = Q97.5) %>%
   # the fitted intervals
-  bind_cols(fitted(b11.5) %>% data.frame()) %>% 
+  bind_cols(fitted(b11.5) %>% data.frame()) %>%
   # the original data used to fit the model
-  bind_cols(b11.5$data) %>% 
-  mutate(case = row_number()) %>% 
-  
+  bind_cols(b11.5$data) %>%
+  mutate(case = row_number()) %>%
+
   # plot!
   ggplot(aes(x = case)) +
-  geom_linerange(aes(ymin = ll / applications, 
-                     ymax = ul / applications),
-                 color = canva_pal("Green fields")(4)[1], 
-                 linewidth = 2.5, alpha = 1/4) +
-  geom_pointrange(aes(ymin = Q2.5  / applications, 
-                      ymax = Q97.5 / applications, 
-                      y = Estimate / applications),
-                  color = canva_pal("Green fields")(4)[4],
-                  linewidth = 1/2, shape = 1) +
-  geom_point(aes(y = admit / applications),
-             color = canva_pal("Green fields")(4)[2],
-             size = 2) +
+  geom_linerange(
+    aes(ymin = ll / applications, ymax = ul / applications),
+    color = canva_pal("Green fields")(4)[1],
+    linewidth = 2.5,
+    alpha = 1 / 4
+  ) +
+  geom_pointrange(
+    aes(
+      ymin = Q2.5 / applications,
+      ymax = Q97.5 / applications,
+      y = Estimate / applications
+    ),
+    color = canva_pal("Green fields")(4)[4],
+    linewidth = 1 / 2,
+    shape = 1
+  ) +
+  geom_point(
+    aes(y = admit / applications),
+    color = canva_pal("Green fields")(4)[2],
+    size = 2
+  ) +
   scale_x_continuous(breaks = 1:12) +
   scale_y_continuous(breaks = c(0, .5, 1)) +
-  labs(subtitle = "Posterior validation check",
-       y = "Admittance probability") +
+  labs(subtitle = "Posterior validation check", y = "Admittance probability") +
   coord_cartesian(ylim = c(0, 1)) +
   theme_hc() +
-  theme(axis.ticks.x = element_blank(),
-        legend.position = "none",
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    axis.ticks.x = element_blank(),
+    legend.position = "none",
+    plot.background = element_rect(fill = "grey92")
+  )
 ```
 
-```{r, fig.width = 4, fig.height = 3.5, echo = F}
+```{r}
+#| echo: false
+#| fig-width: 4
+#| fig-height: 3.5
+
 # this line is the only change from the block above
 p_b11.5 %>%
-  data.frame() %>% 
-  transmute(ll = Q2.5,
-            ul = Q97.5) %>%
+  data.frame() %>%
+  transmute(ll = Q2.5, ul = Q97.5) %>%
   # the fitted intervals
-  bind_cols(fitted(b11.5) %>% data.frame()) %>% 
+  bind_cols(fitted(b11.5) %>% data.frame()) %>%
   # the original data used to fit the model
-  bind_cols(b11.5$data) %>% 
-  mutate(case = row_number()) %>% 
-  
+  bind_cols(b11.5$data) %>%
+  mutate(case = row_number()) %>%
+
   # plot!
   ggplot(aes(x = case)) +
-  geom_linerange(aes(ymin = ll / applications, 
-                     ymax = ul / applications),
-                 color = canva_pal("Green fields")(4)[1], 
-                 linewidth = 2.5, alpha = 1/4) +
-  geom_pointrange(aes(ymin = Q2.5  / applications, 
-                      ymax = Q97.5 / applications, 
-                      y = Estimate / applications),
-                  color = canva_pal("Green fields")(4)[4],
-                  linewidth = 1/2, shape = 1) +
-  geom_point(aes(y = admit / applications),
-             color = canva_pal("Green fields")(4)[2],
-             size = 2) +
+  geom_linerange(
+    aes(ymin = ll / applications, ymax = ul / applications),
+    color = canva_pal("Green fields")(4)[1],
+    linewidth = 2.5,
+    alpha = 1 / 4
+  ) +
+  geom_pointrange(
+    aes(
+      ymin = Q2.5 / applications,
+      ymax = Q97.5 / applications,
+      y = Estimate / applications
+    ),
+    color = canva_pal("Green fields")(4)[4],
+    linewidth = 1 / 2,
+    shape = 1
+  ) +
+  geom_point(
+    aes(y = admit / applications),
+    color = canva_pal("Green fields")(4)[2],
+    size = 2
+  ) +
   scale_x_continuous(breaks = 1:12) +
   scale_y_continuous(breaks = c(0, .5, 1)) +
-  labs(subtitle = "Posterior validation check",
-       y = "Admittance probability") +
+  labs(subtitle = "Posterior validation check", y = "Admittance probability") +
   coord_cartesian(ylim = c(0, 1)) +
   theme_hc() +
-  theme(axis.ticks.x = element_blank(),
-        legend.position = "none",
-        plot.background = element_rect(fill = "grey92"))
+  theme(
+    axis.ticks.x = element_blank(),
+    legend.position = "none",
+    plot.background = element_rect(fill = "grey92")
+  )
 ```
 
 As in the text, the raw data are consistent with the prediction intervals. But those intervals are so incredibly wide, they're hardly an endorsement of the model. Once we learn about hierarchical models, we'll be able to do much better.
@@ -1280,15 +1529,23 @@ Recall the Poisson distribution presumes $\sigma^2$ scales with $\mu$. The negat
 
 Here's a look at the $\gamma$ distribution.
 
-```{r, fig.width = 3.5, fig.height = 3}
-mu    <- 3
+```{r}
+#| fig-width: 3.5
+#| fig-height: 3
+
+mu <- 3
 theta <- 1
 
-ggplot(data = tibble(x = seq(from = 0, to = 12, by = .01)),
-       aes(x = x, y = rethinking::dgamma2(x, mu, theta))) +
+ggplot(
+  data = tibble(x = seq(from = 0, to = 12, by = .01)),
+  aes(x = x, y = rethinking::dgamma2(x, mu, theta))
+) +
   geom_area(fill = canva_pal("Green fields")(4)[4]) +
-  geom_vline(xintercept = mu, linetype = 3,
-             color = canva_pal("Green fields")(4)[3]) +
+  geom_vline(
+    xintercept = mu,
+    linetype = 3,
+    color = canva_pal("Green fields")(4)[3]
+  ) +
   scale_x_continuous(NULL, breaks = c(0, mu, 10)) +
   scale_y_continuous(NULL, breaks = NULL) +
   ggtitle(expression(paste("Our sweet ", gamma, "(3, 1)"))) +
@@ -1299,63 +1556,90 @@ ggplot(data = tibble(x = seq(from = 0, to = 12, by = .01)),
 
 McElreath encouraged us to fool around with plotting gamma distributions with different combinations of $\mu$ and $\theta$. Here's a small attempt with different combinations of each taking on 1, 5, and 9.
 
-```{r, fig.width = 4.5, fig.height = 4.5, warning = F}
+```{r}
+#| warning: false
+#| fig-width: 4.5
+#| fig-height: 4.5
+
 # data
-crossing(mu    = c(1, 5, 9),
-         theta = c(1, 5, 9)) %>% 
-  expand_grid(x = seq(from = 0, to = 27, length.out = 100)) %>% 
-  mutate(density    = rethinking::dgamma2(x, mu, theta),
-         mu_char    = str_c("mu==", mu),
-         theta_char = str_c("theta==", theta)) %>% 
+crossing(mu = c(1, 5, 9), theta = c(1, 5, 9)) %>%
+  expand_grid(x = seq(from = 0, to = 27, length.out = 100)) %>%
+  mutate(
+    density = rethinking::dgamma2(x, mu, theta),
+    mu_char = str_c("mu==", mu),
+    theta_char = str_c("theta==", theta)
+  ) %>%
 
   # plot
   ggplot() +
-  geom_area(aes(x = x, y = density),
-            fill = canva_pal("Green fields")(4)[4]) +
-  geom_vline(aes(xintercept = mu),
-             color = canva_pal("Green fields")(4)[2], linetype = 3) +
+  geom_area(aes(x = x, y = density), fill = canva_pal("Green fields")(4)[4]) +
+  geom_vline(
+    aes(xintercept = mu),
+    color = canva_pal("Green fields")(4)[2],
+    linetype = 3
+  ) +
   scale_y_continuous(NULL, labels = NULL) +
-  labs(title = "Gamma can take many shapes",
-       subtitle = "(dotted vertical lines mark off the means)",
-       x = "parameter space") +
+  labs(
+    title = "Gamma can take many shapes",
+    subtitle = "(dotted vertical lines mark off the means)",
+    x = "parameter space"
+  ) +
   coord_cartesian(xlim = c(0, 25)) +
   theme_hc() +
-  theme(axis.ticks.y = element_blank(),
-        plot.background = element_rect(fill = "grey92")) +
-  facet_grid(theta_char~mu_char, labeller = label_parsed)
+  theme(
+    axis.ticks.y = element_blank(),
+    plot.background = element_rect(fill = "grey92")
+  ) +
+  facet_grid(theta_char ~ mu_char, labeller = label_parsed)
 ```
 
 #### Bonus: Let's fit a negative-binomial model
 
 McElreath didn't give an example of negative-binomial regression in the text. This can be a useful but somewhat perplexing model type, so let's take a detour for an extended example with the `UCBadmit` data. As in other examples, we will be modeling the `admit` rates. We'll keep things simple and leave out predictor variables.
 
-```{r b11.6}
+```{r}
+#| label: b11.6
+
 b11.6 <- brm(
-  data = d, 
+  data = d,
   family = negbinomial,
   admit ~ 1,
-  prior = c(prior(normal(0, 10), class = Intercept),
-            prior(inv_gamma(0.4, 0.3), class = shape)),  # this is the brms default
-  iter = 4000, warmup = 1000, cores = 2, chains = 2,
+  prior = c(
+    prior(normal(0, 10), class = Intercept),
+    prior(inv_gamma(0.4, 0.3), class = shape)
+  ), # this is the brms default
+  iter = 4000,
+  warmup = 1000,
+  cores = 2,
+  chains = 2,
   seed = 11,
-  file = "fits/b11.06")
+  file = "fits/b11.06"
+)
 ```
 
 You may have noticed we used the brms default `prior(inv_gamma(0.4, 0.3), class = shape)` for the shape parameter. Sadly, the base-R stats package does not have convince functions for the inverse gamma distribution, but we do have access to a `dinvgamma()` function from the invgamma package. Here's what that prior looks like.
 
-```{r, fig.width = 3.5, fig.height = 3, warning = F}
+```{r}
+#| warning: false
+#| fig-width: 3.5
+#| fig-height: 3
+
 library(invgamma)
 
-tibble(x = seq(from = 0, to = 14, length.out = 1001)) |> 
-  mutate(density = dinvgamma(x, shape = 0.4, rate = 0.3)) |> 
-  
+tibble(x = seq(from = 0, to = 14, length.out = 1001)) |>
+  mutate(density = dinvgamma(x, shape = 0.4, rate = 0.3)) |>
+
   ggplot(aes(x = x, y = density)) +
-  geom_area(color = "transparent", 
-            fill = canva_pal("Green fields")(4)[2]) +
+  geom_area(color = "transparent", fill = canva_pal("Green fields")(4)[2]) +
   scale_x_continuous(NULL) +
   scale_y_continuous(NULL, breaks = NULL) +
   coord_cartesian(xlim = c(0, 13)) +
-  ggtitle(expression(brms~default~gamma^{-1}*(0.4*", "*0.3)~shape~prior)) +
+  ggtitle(expression(
+    brms ~ default ~ gamma^{
+      -1
+    } *
+      (0.4 * ", " * 0.3) ~ shape ~ prior
+  )) +
   theme_hc() +
   theme(plot.background = element_rect(fill = "grey92"))
 ```
@@ -1365,18 +1649,21 @@ Before we even look at the summary of the model parameters, we'll use the `brms:
 ```{r}
 p <- predict(b11.6, summary = F)
 
-p %>% 
+p %>%
   str()
 ```
 
 Because we have 6,000 posterior iterations, we also get back 6,000 rows. We have 12 columns, which correspond to the 12 rows (i.e., cases) in the original data. In the next block, we'll put convert that output to a data frame and wrangle a little before plotting the results.
 
-```{r, fig.width = 7, fig.height = 3}
-p %>% 
-  data.frame() %>% 
-  set_names(c(str_c(0, 1:9), 10:12)) %>% 
-  gather(case, lambda) %>% 
-  mutate(case = str_c("case: ", case)) %>% 
+```{r}
+#| fig-width: 7
+#| fig-height: 3
+
+p %>%
+  data.frame() %>%
+  set_names(c(str_c(0, 1:9), 10:12)) %>%
+  gather(case, lambda) %>%
+  mutate(case = str_c("case: ", case)) %>%
 
   ggplot(aes(x = lambda)) +
   geom_density(color = "transparent", fill = canva_pal("Green fields")(4)[2]) +
@@ -1408,14 +1695,17 @@ print(b11.6)
 
 We have a shape (i.e., $\alpha$) and an intercept (i.e., $\log \mu$). After exponentiating the intercept parameter, here are the posterior distributions for those two gamma parameters.
 
-```{r, fig.width = 6, fig.height = 2.5, warning = F}
+```{r}
+#| warning: false
+#| fig-width: 6
+#| fig-height: 2.5
+
 post <- as_draws_df(b11.6)
 
-post %>% 
-  transmute(mu    = exp(b_Intercept),
-            alpha = shape) %>%
-  gather(parameter, value) %>% 
-  
+post %>%
+  transmute(mu = exp(b_Intercept), alpha = shape) %>%
+  gather(parameter, value) %>%
+
   ggplot(aes(x = value)) +
   geom_density(color = "transparent", fill = canva_pal("Green fields")(4)[2]) +
   scale_y_continuous(NULL, breaks = NULL) +
@@ -1442,30 +1732,36 @@ Using that formulation, here are the posterior means for $\mu$ and $\theta$.
 
 Much like we did in Figure 11.5 for the beta binomial model, here is the plot of that posterior mean gamma distribution accompanied by an additional 100 combinations of $\mu$ and $\theta$ values sampled from the posterior.
 
-```{r, fig.width = 3.5, fig.height = 3}
+```{r}
+#| fig-width: 3.5
+#| fig-height: 3
+
 # this makes `sample_n()` reproducible
 set.seed(11)
 
 # wrangle to get the 100 draws
-post %>% 
-  mutate(mu    = exp(b_Intercept),
-         theta = exp(b_Intercept) / shape) %>%
-  sample_n(size = 100) %>% 
-  expand_grid(x = 1:550) %>% 
-  mutate(density = rethinking::dgamma2(x, mu, theta)) %>% 
-  
+post %>%
+  mutate(mu = exp(b_Intercept), theta = exp(b_Intercept) / shape) %>%
+  sample_n(size = 100) %>%
+  expand_grid(x = 1:550) %>%
+  mutate(density = rethinking::dgamma2(x, mu, theta)) %>%
+
   # plot
   ggplot(aes(x = x, y = density)) +
-  geom_line(aes(group = .draw),
-            alpha = .1, color = canva_pal("Green fields")(4)[4]) +
-  stat_function(fun = rethinking::dgamma2,
-                args = list(mu    = mu,
-                            scale = theta),
-                linewidth = 1.5, color = canva_pal("Green fields")(4)[4]) +
+  geom_line(
+    aes(group = .draw),
+    alpha = .1,
+    color = canva_pal("Green fields")(4)[4]
+  ) +
+  stat_function(
+    fun = rethinking::dgamma2,
+    args = list(mu = mu, scale = theta),
+    linewidth = 1.5,
+    color = canva_pal("Green fields")(4)[4]
+  ) +
   scale_y_continuous(NULL, breaks = NULL) +
-  xlab(expression(distribution~of~lambda~values)) +
-  coord_cartesian(xlim = c(0, 500),
-                  ylim = c(0, 0.01)) +
+  xlab(expression(distribution ~ of ~ lambda ~ values)) +
+  coord_cartesian(xlim = c(0, 500), ylim = c(0, 0.01)) +
   theme_hc() +
   theme(plot.background = element_rect(fill = "grey92"))
 ```
@@ -1487,43 +1783,52 @@ where $\alpha$, $e$, and $\Gamma$ are all as they were before and $\beta$ is the
 
 And here's a remake of the plot from above, but with the $\alpha$ and $\theta$ parameterization.
 
-```{r, fig.width = 3.5, fig.height = 3}
+```{r}
+#| fig-width: 3.5
+#| fig-height: 3
+
 set.seed(11)
 
 # wrangle to get the 100 draws
-post %>% 
-  mutate(alpha = shape,
-         theta = exp(b_Intercept) / shape) %>%
-  sample_n(size = 100) %>% 
-  expand_grid(x = 1:550) %>% 
-  mutate(density = dgamma(x, shape = alpha, scale = theta)) %>% 
-  
+post %>%
+  mutate(alpha = shape, theta = exp(b_Intercept) / shape) %>%
+  sample_n(size = 100) %>%
+  expand_grid(x = 1:550) %>%
+  mutate(density = dgamma(x, shape = alpha, scale = theta)) %>%
+
   # plot
   ggplot(aes(x = x, y = density)) +
-  geom_line(aes(group = .draw),
-            alpha = .1, color = canva_pal("Green fields")(4)[4]) +
-  stat_function(fun = dgamma,
-                args = list(shape = alpha,
-                            scale = theta),
-                linewidth = 1.5, color = canva_pal("Green fields")(4)[4]) +
+  geom_line(
+    aes(group = .draw),
+    alpha = .1,
+    color = canva_pal("Green fields")(4)[4]
+  ) +
+  stat_function(
+    fun = dgamma,
+    args = list(shape = alpha, scale = theta),
+    linewidth = 1.5,
+    color = canva_pal("Green fields")(4)[4]
+  ) +
   scale_y_continuous(NULL, breaks = NULL) +
-  xlab(expression(distribution~of~lambda~values)) +
-  coord_cartesian(xlim = c(0, 500),
-                  ylim = c(0, 0.01)) +
+  xlab(expression(distribution ~ of ~ lambda ~ values)) +
+  coord_cartesian(xlim = c(0, 500), ylim = c(0, 0.01)) +
   theme_hc() +
   theme(plot.background = element_rect(fill = "grey92"))
 ```
 
 It turns out it's possible to get the variance of a gamma distribution with $\alpha \theta^2$. Here's that posterior.
 
-```{r, fig.width = 6, fig.height = 2.5}
-post %>% 
+```{r}
+#| fig-width: 6
+#| fig-height: 2.5
+
+post %>%
   mutate(var = shape * (exp(b_Intercept) / shape)^2) %>%
-  
+
   ggplot(aes(x = var)) +
   geom_density(color = "transparent", fill = canva_pal("Green fields")(4)[2]) +
   scale_y_continuous(NULL, breaks = NULL) +
-  xlab(expression("the variance (i.e., "*alpha*theta^2*")")) +
+  xlab(expression("the variance (i.e., " * alpha * theta^2 * ")")) +
   coord_cartesian(xlim = c(0, 125000)) +
   theme_hc() +
   theme(plot.background = element_rect(fill = "grey92"))
@@ -1532,29 +1837,29 @@ post %>%
 Here's the posterior mean for the gamma variance.
 
 ```{r}
-post %>% 
-  mutate(var = shape * (exp(b_Intercept) / shape)^2) %>% 
+post %>%
+  mutate(var = shape * (exp(b_Intercept) / shape)^2) %>%
   summarise(mean = mean(var))
 ```
 
 And just to round things out, here are the mean and variance values for those 12 distributions of draws from the `predict()` output.
 
-```{r, message = F}
-p %>% 
-  data.frame() %>% 
-  set_names(c(str_c(0, 1:9), 10:12)) %>% 
-  gather(case, lambda) %>% 
-  group_by(case) %>% 
-  summarise(mean     = mean(lambda),
-            variance = var(lambda))
+```{r}
+#| message: false
+
+p %>%
+  data.frame() %>%
+  set_names(c(str_c(0, 1:9), 10:12)) %>%
+  gather(case, lambda) %>%
+  group_by(case) %>%
+  summarise(mean = mean(lambda), variance = var(lambda))
 ```
 
 Finally, here are the mean and variance for the `admit` data.
 
 ```{r}
-d %>% 
-  summarise(mean     = mean(admit),
-            variance = var(admit))
+d %>%
+  summarise(mean = mean(admit), variance = var(admit))
 ```
 
 If you'd like more practice with the negative-binomial model and some of the others models for categorical data we covered in this chapter and in @sec-Counting-and-Classification, Alan Agresti covered them extensively in his [-@agrestiFoundationsLinearGeneralized2015] text, [*Foundations of linear and generalized linear models*](https://www.wiley.com/en-us/Foundations+of+Linear+and+Generalized+Linear+Models-p-9781118730034).
@@ -1563,11 +1868,10 @@ If you'd like more practice with the negative-binomial model and some of the oth
 
 > Both the beta-binomial and the gamma-Poisson models are maximum entropy for the same constraints as the regular binomial and Poisson. They just try to account for unobserved heterogeneity in probabilities and rates. So while they can be a lot harder to fit to data, they can be usefully conceptualized much like ordinary binomial and Poisson GLMs. So in terms of model comparison using information criteria, a beta-binomial model is a binomial model, and a gamma-Poisson (negative-binomial) is a Poisson model. (pp. 350--351)
 
-## Session info {-}
+## Session info {.unnumbered}
 
 ```{r}
 sessionInfo()
 ```
 
-## Comments {-}
-
+## Comments {.unnumbered}

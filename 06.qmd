@@ -2,10 +2,10 @@
 
 In this chapter we contend with two contrasting kinds of statistical error:
 
-* overfitting, "which leads to poor prediction by learning too *much* from the data"
-* underfitting, "which leads to poor prediction by learning too *little* from the data" (p. 166, *emphasis* added) 
+- overfitting, "which leads to poor prediction by learning too *much* from the data"
+- underfitting, "which leads to poor prediction by learning too *little* from the data" (p. 166, *emphasis* added)
 
-Toward that end, we will employ 
+Toward that end, we will employ
 
 > two common families of approaches. The first approach is to use a **regularizing prior** to tell the model not to get too excited by the data. This is the same device that non-Bayesian methods refer to as "penalized likelihood." The second approach is to use some scoring device, like **information criteria**, to model the prediction risk and estimate predictive accuracy for some purpose. Both families of approaches are routinely used in the natural and social sciences Furthermore, they can be--maybe should be--used in combination. [@mcelreathStatisticalRethinkingBayesian2015, p. 166, **emphasis** in the original]
 
@@ -37,46 +37,78 @@ In other words, the topics McElreath grappled with in this chapter are difficult
 
 We'll start off by making the data with brain size and body size for seven `species` [see @mchenryAustralopithecusHomoTransformations2000].
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 library(tidyverse)
 
-(
-  d <- tibble(
-    species = c("afarensis", "africanus", "habilis", "boisei", "rudolfensis", "ergaster", "sapiens"), 
-    brain   = c(438, 452, 612, 521, 752, 871, 1350), 
-    mass    = c(37.0, 35.5, 34.5, 41.5, 55.5, 61.0, 53.5))
-)
+(d <- tibble(
+  species = c(
+    "afarensis",
+    "africanus",
+    "habilis",
+    "boisei",
+    "rudolfensis",
+    "ergaster",
+    "sapiens"
+  ),
+  brain = c(438, 452, 612, 521, 752, 871, 1350),
+  mass = c(37.0, 35.5, 34.5, 41.5, 55.5, 61.0, 53.5)
+))
 ```
 
 Let's get ready for Figure 6.2. The plots in this chapter will be characterized by `theme_classic() + theme(text = element_text(family = "Courier"))`. Our color palette will come from the [rcartocolor package](https://cran.r-project.org/package=rcartocolor) [@R-rcartocolor], which provides color schemes [designed by 'CARTO'](https://carto.com/carto-colors/).
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 library(rcartocolor)
 ```
 
 The specific palette we'll be using is "BurgYl." In addition to palettes, the rcartocolor package offers a few convenience functions which make it easier to use their palettes. The `carto_pal()` function will return the HEX numbers associated with a given palette's colors and the `display_carto_pal()` function will display the actual colors.
 
-```{r, fig.width = 6, fig.height = 2.5}
+```{r}
+#| fig-width: 6
+#| fig-height: 2.5
+
 carto_pal(7, "BurgYl")
 display_carto_pal(7, "BurgYl")
 ```
 
 We'll be using a diluted version of the third color for the panel background (i.e., `theme(panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)))`) and the darker purples for other plot elements. Here's the plot.
 
-```{r, fig.width = 3.5, fig.height = 3, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+#| fig-width: 3.5
+#| fig-height: 3
+
 library(ggrepel)
 
 d %>%
-  ggplot(aes(x =  mass, y = brain, label = species)) +
+  ggplot(aes(x = mass, y = brain, label = species)) +
   geom_point(color = carto_pal(7, "BurgYl")[5]) +
-  geom_text_repel(size = 3, color = carto_pal(7, "BurgYl")[7], family = "Courier", seed = 438) +
-  labs(subtitle = "Average brain volume by body\nmass for six hominin species",
-       x = "body mass (kg)",
-       y = "brain volume (cc)") +
+  geom_text_repel(
+    size = 3,
+    color = carto_pal(7, "BurgYl")[7],
+    family = "Courier",
+    seed = 438
+  ) +
+  labs(
+    subtitle = "Average brain volume by body\nmass for six hominin species",
+    x = "body mass (kg)",
+    y = "brain volume (cc)"
+  ) +
   coord_cartesian(xlim = c(30, 65)) +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)))
+  theme(
+    text = element_text(family = "Courier"),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    )
+  )
 ```
 
 The first six models, which we'll be fitting using OLS regression via the `lm()` function, range in complexity from the simple univariable model
@@ -95,7 +127,10 @@ to the dizzying sixth-degree polynomial model
 
 Let's fit them in bulk. First we'll make a custom function, `fit_lm()`, into which we'll feed the desired names and formulas of our models. We'll make a tibble initially composed of those names (i.e., `model`) and formulas (i.e., `formula`). Via `purrr::map2()` within `mutate()`, we'll then fit the models and save the model objects within the tibble. The [broom package](https://cran.r-project.org/package=broom) [@R-broom] provides an array of convenience functions to convert statistical analysis summaries into tidy data objects. We'll employ `broom::tidy()` and `broom::glance()` to extract information from the model fits.
 
-```{r, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+
 library(broom)
 
 fit_lm <- function(model, formula) {
@@ -103,16 +138,18 @@ fit_lm <- function(model, formula) {
 }
 
 fits <- tibble(
-  model   = str_c("b6.", 1:6),
-  formula = c("brain ~ mass", 
-              "brain ~ mass + I(mass^2)", 
-              "brain ~ mass + I(mass^2) + I(mass^3)", 
-              "brain ~ mass + I(mass^2) + I(mass^3) + I(mass^4)", 
-              "brain ~ mass + I(mass^2) + I(mass^3) + I(mass^4) + I(mass^5)", 
-              "brain ~ mass + I(mass^2) + I(mass^3) + I(mass^4) + I(mass^5) + I(mass^6)")) %>% 
-  mutate(fit = map2(model, formula, fit_lm)) %>% 
-  mutate(tidy   = map(fit, tidy),
-         glance = map(fit, glance))
+  model = str_c("b6.", 1:6),
+  formula = c(
+    "brain ~ mass",
+    "brain ~ mass + I(mass^2)",
+    "brain ~ mass + I(mass^2) + I(mass^3)",
+    "brain ~ mass + I(mass^2) + I(mass^3) + I(mass^4)",
+    "brain ~ mass + I(mass^2) + I(mass^3) + I(mass^4) + I(mass^5)",
+    "brain ~ mass + I(mass^2) + I(mass^3) + I(mass^4) + I(mass^5) + I(mass^6)"
+  )
+) %>%
+  mutate(fit = map2(model, formula, fit_lm)) %>%
+  mutate(tidy = map(fit, tidy), glance = map(fit, glance))
 
 # what did we just do?
 print(fits)
@@ -120,110 +157,169 @@ print(fits)
 
 Our `fits` object is a [nested tibble](https://tidyr.tidyverse.org/reference/nest.html). To learn more about this bulk approach to fitting models, check out Hadley Wickham's talk, [Managing many models with R](https://www.youtube.com/watch?v=rz3_FDVt9eg). As you might learn in the talk, we can extract the $R^2$ from each model with `map_dbl("r.squared")`, which we'll then display in a plot.
 
-```{r, fig.width = 8, fig.height = 1.5}
-fits <- fits %>% 
-  mutate(r2 = glance %>% map_dbl("r.squared")) %>% 
-  mutate(r2_text = round(r2, digits = 2) %>% as.character() %>% str_replace(., "0.", "."))
+```{r}
+#| fig-width: 8
+#| fig-height: 1.5
 
-fits %>% 
+fits <- fits %>%
+  mutate(r2 = glance %>% map_dbl("r.squared")) %>%
+  mutate(
+    r2_text = round(r2, digits = 2) %>%
+      as.character() %>%
+      str_replace(., "0.", ".")
+  )
+
+fits %>%
   ggplot(aes(x = r2, y = formula, label = r2_text)) +
   geom_text(color = carto_pal(7, "BurgYl")[7], size = 3.5) +
   scale_x_continuous(expression(italic(R)^2), limits = 0:1, breaks = 0:1) +
   ylab(NULL) +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        axis.text.y = element_text(hjust = 0),
-        axis.ticks.y = element_blank(),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)))
+  theme(
+    text = element_text(family = "Courier"),
+    axis.text.y = element_text(hjust = 0),
+    axis.ticks.y = element_blank(),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    )
+  )
 ```
 
-If we wanted to look at the model coefficients, we could `unnest(tidy)` and wrangle a bit.  
+If we wanted to look at the model coefficients, we could `unnest(tidy)` and wrangle a bit.
 
 ```{r}
-fits %>% 
-  unnest(tidy) %>% 
-  select(model, term:estimate) %>% 
-  mutate_if(is.double, round, digits = 1) %>% 
-  complete(model, term) %>% 
-  spread(key = term, value = estimate) %>% 
-  select(model, `(Intercept)`, mass, everything()) %>% 
+fits %>%
+  unnest(tidy) %>%
+  select(model, term:estimate) %>%
+  mutate_if(is.double, round, digits = 1) %>%
+  complete(model, term) %>%
+  spread(key = term, value = estimate) %>%
+  select(model, `(Intercept)`, mass, everything()) %>%
   knitr::kable()
 ```
 
 For Figure 6.3, we'll make each plot individually and them glue them together with the patchwork package. Since they all share a common structure, we'll start by specifying a base plot which we'll save as `p`.
 
 ```{r}
-p <- d %>% 
+p <- d %>%
   ggplot(aes(x = mass, y = brain)) +
   geom_point(color = carto_pal(7, "BurgYl")[7]) +
   scale_x_continuous("body mass (kg)", limits = c(33, 62), expand = c(0, 0)) +
   ylab("brain volume (cc)") +
   coord_cartesian(ylim = c(300, 1500)) +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)))
+  theme(
+    text = element_text(family = "Courier"),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    )
+  )
 ```
 
 Now for each subplot, we'll tack the subplot-specific components onto `p`. The main action is in `stat_smooth()`. For each subplot, the first three lines in `stat_smooth()` are identical, with only the bottom `formula` line differing. Like McElreath did in the text, we also adjust the $y$-axis range for the last two plots.
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 # linear
 p1 <- p +
-  stat_smooth(method = "lm", fullrange = TRUE, level = .89,  # note our rare use of 89% intervals
-              color = carto_pal(7, "BurgYl")[6], fill = carto_pal(7, "BurgYl")[6], 
-              linewidth = 1/2, alpha = 1/3,
-              formula = y ~ x) +
-  ggtitle(NULL, subtitle = expression(italic(R)^2==".49"))
-  
+  stat_smooth(
+    method = "lm",
+    fullrange = TRUE,
+    level = .89, # note our rare use of 89% intervals
+    color = carto_pal(7, "BurgYl")[6],
+    fill = carto_pal(7, "BurgYl")[6],
+    linewidth = 1 / 2,
+    alpha = 1 / 3,
+    formula = y ~ x
+  ) +
+  ggtitle(NULL, subtitle = expression(italic(R)^2 == ".49"))
+
 # quadratic
-p2 <- p + 
-  stat_smooth(method = "lm", fullrange = TRUE, level = .89,
-              color = carto_pal(7, "BurgYl")[6], fill = carto_pal(7, "BurgYl")[6], 
-              linewidth = 1/2, alpha = 1/3,              
-              formula = y ~ poly(x, 2)) +
-  ggtitle(NULL, subtitle = expression(italic(R)^2==".54"))
+p2 <- p +
+  stat_smooth(
+    method = "lm",
+    fullrange = TRUE,
+    level = .89,
+    color = carto_pal(7, "BurgYl")[6],
+    fill = carto_pal(7, "BurgYl")[6],
+    linewidth = 1 / 2,
+    alpha = 1 / 3,
+    formula = y ~ poly(x, 2)
+  ) +
+  ggtitle(NULL, subtitle = expression(italic(R)^2 == ".54"))
 
 # cubic
-p3 <- p + 
-  stat_smooth(method = "lm", fullrange = TRUE, level = .89,
-              color = carto_pal(7, "BurgYl")[6], fill = carto_pal(7, "BurgYl")[6], 
-              linewidth = 1/2, alpha = 1/3,              
-              formula = y ~ poly(x, 3)) +
-  ggtitle(NULL, subtitle = expression(italic(R)^2==".68"))
+p3 <- p +
+  stat_smooth(
+    method = "lm",
+    fullrange = TRUE,
+    level = .89,
+    color = carto_pal(7, "BurgYl")[6],
+    fill = carto_pal(7, "BurgYl")[6],
+    linewidth = 1 / 2,
+    alpha = 1 / 3,
+    formula = y ~ poly(x, 3)
+  ) +
+  ggtitle(NULL, subtitle = expression(italic(R)^2 == ".68"))
 
 # fourth-order polynomial
-p4 <- p + 
-  stat_smooth(method = "lm", fullrange = TRUE, level = .89,
-              color = carto_pal(7, "BurgYl")[6], fill = carto_pal(7, "BurgYl")[6], 
-              linewidth = 1/2, alpha = 1/3,              
-              formula = y ~ poly(x, 4)) +
-  ggtitle(NULL, subtitle = expression(italic(R)^2==".81"))
+p4 <- p +
+  stat_smooth(
+    method = "lm",
+    fullrange = TRUE,
+    level = .89,
+    color = carto_pal(7, "BurgYl")[6],
+    fill = carto_pal(7, "BurgYl")[6],
+    linewidth = 1 / 2,
+    alpha = 1 / 3,
+    formula = y ~ poly(x, 4)
+  ) +
+  ggtitle(NULL, subtitle = expression(italic(R)^2 == ".81"))
 
 # fifth-order polynomial
-p5 <- p + 
-  stat_smooth(method = "lm", fullrange = TRUE, level = .89,
-              color = carto_pal(7, "BurgYl")[6], fill = carto_pal(7, "BurgYl")[6], 
-              linewidth = 1/2, alpha = 1/3,              
-              formula = y ~ poly(x, 5)) +
+p5 <- p +
+  stat_smooth(
+    method = "lm",
+    fullrange = TRUE,
+    level = .89,
+    color = carto_pal(7, "BurgYl")[6],
+    fill = carto_pal(7, "BurgYl")[6],
+    linewidth = 1 / 2,
+    alpha = 1 / 3,
+    formula = y ~ poly(x, 5)
+  ) +
   # we're adjusting the y-axis range for this plot (and the next)
   coord_cartesian(ylim = c(150, 1900)) +
-  ggtitle(NULL, subtitle = expression(italic(R)^2==".99"))
-  
+  ggtitle(NULL, subtitle = expression(italic(R)^2 == ".99"))
+
 # sixth-order polynomial
-p6 <- p + 
+p6 <- p +
   # mark off 0 on the y-axis
-  geom_hline(yintercept = 0, color = carto_pal(7, "BurgYl")[2], linetype = 2) + 
-  stat_smooth(method = "lm", fullrange = TRUE, level = .89,
-              color = carto_pal(7, "BurgYl")[6], fill = carto_pal(7, "BurgYl")[6], 
-              linewidth = 1/2, alpha = 1/3,
-              formula = y ~ poly(x, 6)) +
+  geom_hline(yintercept = 0, color = carto_pal(7, "BurgYl")[2], linetype = 2) +
+  stat_smooth(
+    method = "lm",
+    fullrange = TRUE,
+    level = .89,
+    color = carto_pal(7, "BurgYl")[6],
+    fill = carto_pal(7, "BurgYl")[6],
+    linewidth = 1 / 2,
+    alpha = 1 / 3,
+    formula = y ~ poly(x, 6)
+  ) +
   coord_cartesian(ylim = c(-300, 1500)) +
-  ggtitle(NULL, subtitle = expression(italic(R)^2==1))
+  ggtitle(NULL, subtitle = expression(italic(R)^2 == 1))
 ```
 
 Okay, now we're ready to combine the six subplots and produce our version of Figure 6.3.
 
-```{r, fig.width = 6, fig.height = 8, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+#| fig-width: 6
+#| fig-height: 8
+
 library(patchwork)
 
 (p1 + p2) / (p3 + p4) / (p5 + p6)
@@ -238,8 +334,7 @@ library(patchwork)
 Fit the underfit intercept-only model, `b6.7`.
 
 ```{r}
-b6.7 <- lm(data = d, 
-           brain ~ 1)
+b6.7 <- lm(data = d, brain ~ 1)
 
 summary(b6.7)
 ```
@@ -252,13 +347,22 @@ glance(b6.7)
 
 Zero. Our intercept-only `b6.7` explained exactly zero variance in `brain`. All it did was tell us what the unconditional mean and variance (i.e., 'Residual standard error') were. I hope that makes sense. They were the only things in the model: $\text{brain}_i \sim \operatorname{Normal}(\mu = \alpha, \sigma)$. To get the intercept-only model for Figure 6.4, we plug `formula = y ~ 1` into the `stat_smooth()` function.
 
-```{r, fig.width = 3, fig.height = 2.67} 
+```{r}
+#| fig-width: 3
+#| fig-height: 2.67
+
 p +
-  stat_smooth(method = "lm", fullrange = TRUE, level = .89,
-              color = carto_pal(7, "BurgYl")[6], fill = carto_pal(7, "BurgYl")[6], 
-              linewidth = 1/2, alpha = 1/3,              
-              formula = y ~ 1) +
-  ggtitle(NULL, subtitle = expression(italic(R)^2==0))
+  stat_smooth(
+    method = "lm",
+    fullrange = TRUE,
+    level = .89,
+    color = carto_pal(7, "BurgYl")[6],
+    fill = carto_pal(7, "BurgYl")[6],
+    linewidth = 1 / 2,
+    alpha = 1 / 3,
+    formula = y ~ 1
+  ) +
+  ggtitle(NULL, subtitle = expression(italic(R)^2 == 0))
 ```
 
 Our underfit model `b6.7` didn't learn anything about the relation between `mass` and `brain`. "Such a model not only fails to describe the sample. It would also do a poor job for new data" (p. 173).
@@ -279,64 +383,89 @@ We can then extend that logic into a custom function, `make_lines()`, that will 
 nd <- tibble(mass = c(30, 70))
 
 make_lines <- function(row) {
-  
   # fit the model
   my_fit <- d %>%
-    filter(row_number() != row) %>% 
+    filter(row_number() != row) %>%
     lm(formula = brain ~ mass)
-  
+
   # compute fitted lines
-  nd %>% 
-    mutate(brain =  predict(my_fit, nd))
+  nd %>%
+    mutate(brain = predict(my_fit, nd))
 }
 ```
 
 Here we'll make a tibble, `lines`, which will specify rows 1 through 7 in the `row` column. We'll then feed those `row` numbers into our custom `make_lines()` function, which will return the predicted values and their corresponding `mass` values, per model.
 
-```{r, warning = F, message = F}
-(
-  lines <- tibble(row = 1:7) %>% 
-  mutate(p = map(row, make_lines)) %>% 
-  unnest(p)
-)
+```{r}
+#| warning: false
+#| message: false
+
+(lines <- tibble(row = 1:7) %>%
+  mutate(p = map(row, make_lines)) %>%
+  unnest(p))
 ```
 
 Now we're ready to plot the left panel of Figure 6.5.
 
-```{r, fig.width = 3.5, fig.height = 2.75, warning = F, message = F}
-p + 
+```{r}
+#| warning: false
+#| message: false
+#| fig-width: 3.5
+#| fig-height: 2.75
+
+p +
   scale_x_continuous(expand = c(0, 0)) +
-  geom_line(data = lines, 
-            aes(x = mass, y = brain, group = row),
-            color = carto_pal(7, "BurgYl")[6], alpha = 1/2, linewidth = 1/2)
+  geom_line(
+    data = lines,
+    aes(x = mass, y = brain, group = row),
+    color = carto_pal(7, "BurgYl")[6],
+    alpha = 1 / 2,
+    linewidth = 1 / 2
+  )
 ```
 
 To make the right panel for Figure 6.5, we'll need to increase the number of `mass` points in our `nd` data and redefine the `make_lines()` function to fit the sixth-order-polynomial model.
 
-```{r, fig.width = 3.5, fig.height = 2.75, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+#| fig-width: 3.5
+#| fig-height: 2.75
+
 # because these lines will be very curvy, we'll need new data over many points of `mass`
 nd <- tibble(mass = seq(from = 30, to = 65, length.out = 200))
 
 # redifine the function
 make_lines <- function(row) {
   my_fit <- d %>%
-    filter(row_number() != row) %>% 
-    lm(formula = brain ~ mass + I(mass^2) + I(mass^3) + I(mass^4) + I(mass^5) + I(mass^6))
-  
-  nd %>% 
-    mutate(brain =  predict(my_fit, nd))
+    filter(row_number() != row) %>%
+    lm(
+      formula = brain ~ mass +
+        I(mass^2) +
+        I(mass^3) +
+        I(mass^4) +
+        I(mass^5) +
+        I(mass^6)
+    )
+
+  nd %>%
+    mutate(brain = predict(my_fit, nd))
 }
 
 # make our new tibble
-lines <- tibble(row = 1:7) %>% 
-  mutate(p = map(row, make_lines)) %>% 
+lines <- tibble(row = 1:7) %>%
+  mutate(p = map(row, make_lines)) %>%
   unnest(p)
 
 # plot!
 p +
-  geom_line(data = lines, 
-            aes(group = row),
-            color = carto_pal(7, "BurgYl")[6], alpha = 1/2, linewidth = 1/2) +
+  geom_line(
+    data = lines,
+    aes(group = row),
+    color = carto_pal(7, "BurgYl")[6],
+    alpha = 1 / 2,
+    linewidth = 1 / 2
+  ) +
   coord_cartesian(ylim = c(-300, 2000))
 ```
 
@@ -348,77 +477,95 @@ p +
 
 If you let rain = 1 and sun = 0, here's a way to make a plot of the first table of page 175, the weatherperson's predictions.
 
-```{r, fig.width = 6, fig.height = 1.5}
-weatherperson <- tibble(
-  day        = 1:10,
-  prediction = rep(c(1, 0.6), times = c(3, 7)),
-  observed   = rep(c(1, 0), times = c(3, 7)))
+```{r}
+#| fig-width: 6
+#| fig-height: 1.5
 
-weatherperson %>% 
-  gather(key, value, -day) %>% 
-  
+weatherperson <- tibble(
+  day = 1:10,
+  prediction = rep(c(1, 0.6), times = c(3, 7)),
+  observed = rep(c(1, 0), times = c(3, 7))
+)
+
+weatherperson %>%
+  gather(key, value, -day) %>%
+
   ggplot(aes(x = day, y = key, fill = value)) +
   geom_tile(color = "white") +
-  geom_text(aes(label = value, color = value == 0),
-            family = "Courier") +
+  geom_text(aes(label = value, color = value == 0), family = "Courier") +
   scale_fill_viridis_c(direction = -1) +
   scale_color_manual(values = c("white", "black")) +
   scale_x_continuous(breaks = 1:10, expand = c(0, 0)) +
   scale_y_discrete(NULL, expand = c(0, 0)) +
-  theme(text = element_text(family = "Courier"),
-        axis.ticks.y = element_blank(),
-        legend.position = "none")
+  theme(
+    text = element_text(family = "Courier"),
+    axis.ticks.y = element_blank(),
+    legend.position = "none"
+  )
 ```
 
 Here's how the newcomer fared.
 
-```{r, fig.width = 6, fig.height = 1.5}
-newcomer <- tibble(
-  day        = 1:10,
-  prediction = 0,
-  observed   = rep(c(1, 0), times = c(3, 7)))
+```{r}
+#| fig-width: 6
+#| fig-height: 1.5
 
-newcomer %>% 
+newcomer <- tibble(
+  day = 1:10,
+  prediction = 0,
+  observed = rep(c(1, 0), times = c(3, 7))
+)
+
+newcomer %>%
   gather(key, value, -day) %>%
-  
+
   ggplot(aes(x = day, y = key, fill = value)) +
   geom_tile(color = "white") +
-  geom_text(aes(label = value, color = value == 0),
-            family = "Courier") +
+  geom_text(aes(label = value, color = value == 0), family = "Courier") +
   scale_fill_viridis_c(direction = -1) +
   scale_color_manual(values = c("white", "black")) +
   scale_x_continuous(breaks = 1:10, expand = c(0, 0)) +
   scale_y_discrete(NULL, expand = c(0, 0)) +
-  theme(text = element_text(family = "Courier"),
-        axis.ticks.y = element_blank(),
-        legend.position = "none")
+  theme(
+    text = element_text(family = "Courier"),
+    axis.ticks.y = element_blank(),
+    legend.position = "none"
+  )
 ```
 
 If we do the math entailed in the tibbles, we'll see why the newcomer could boast "I'm the best person for the job" (p. 175).
 
-```{r, message = F}
-weatherperson %>% 
-  bind_rows(newcomer) %>% 
-  mutate(person = rep(c("weatherperson", "newcomer"), each = n() / 2),
-         hit    = ifelse(prediction == observed, 1, 1 - prediction - observed)) %>% 
-  group_by(person) %>% 
-  summarise(n_days   = n(),
-            n_hits   = sum(hit),
-            hit_rate = mean(hit))
+```{r}
+#| message: false
+
+weatherperson %>%
+  bind_rows(newcomer) %>%
+  mutate(
+    person = rep(c("weatherperson", "newcomer"), each = n() / 2),
+    hit = ifelse(prediction == observed, 1, 1 - prediction - observed)
+  ) %>%
+  group_by(person) %>%
+  summarise(n_days = n(), n_hits = sum(hit), hit_rate = mean(hit))
 ```
 
 #### Costs and benefits
 
 Our new `points` variable doesn't fit into the nice color-based `geom_tile()` plots from above. But we can still do the math.
 
-```{r, message = F}
-weatherperson %>% 
-  bind_rows(newcomer) %>% 
-  mutate(person = rep(c("weatherperson", "newcomer"), each = n()/2),
-         points = ifelse(observed == 1 & prediction != 1, -5,
-                         ifelse(observed == 1 & prediction == 1, -1,
-                                -1 * prediction))) %>% 
-  group_by(person) %>% 
+```{r}
+#| message: false
+
+weatherperson %>%
+  bind_rows(newcomer) %>%
+  mutate(
+    person = rep(c("weatherperson", "newcomer"), each = n() / 2),
+    points = ifelse(
+      observed == 1 & prediction != 1,
+      -5,
+      ifelse(observed == 1 & prediction == 1, -1, -1 * prediction)
+    )
+  ) %>%
+  group_by(person) %>%
   summarise(happiness = sum(points))
 ```
 
@@ -429,18 +576,22 @@ weatherperson %>%
 > In this light, the newcomer looks even worse. (p. 176)
 
 ```{r}
-weatherperson %>% 
-  bind_rows(newcomer) %>% 
-  mutate(person = rep(c("weatherperson", "newcomer"), each = n() / 2),
-         hit    = ifelse(prediction == observed, 1, 1 - prediction - observed)) %>% 
-  group_by(person, hit) %>% 
-  count() %>% 
-  ungroup() %>% 
-  mutate(power_character = str_c(hit, "^", n),  # this line is just for pedagogy
-         power = hit ^ n,
-         term  = rep(letters[1:2], times = 2)) %>% 
-  select(person, term, power) %>% 
-  spread(key = term, value = power) %>% 
+weatherperson %>%
+  bind_rows(newcomer) %>%
+  mutate(
+    person = rep(c("weatherperson", "newcomer"), each = n() / 2),
+    hit = ifelse(prediction == observed, 1, 1 - prediction - observed)
+  ) %>%
+  group_by(person, hit) %>%
+  count() %>%
+  ungroup() %>%
+  mutate(
+    power_character = str_c(hit, "^", n), # this line is just for pedagogy
+    power = hit^n,
+    term = rep(letters[1:2], times = 2)
+  ) %>%
+  select(person, term, power) %>%
+  spread(key = term, value = power) %>%
   mutate(probability_correct_sequence = a * b)
 ```
 
@@ -453,10 +604,9 @@ $$H(p) = - \text E \log (p_i) = - \sum_{i = 1}^n p_i \log (p_i).$$
 McElreath put it in words as "the uncertainty contained in a probability distribution is the average log-probability of the event" (p. 178). We'll compute the information entropy for weather at the first unnamed location, which we'll call `McElreath's house`, and `Abu Dhabi` at once.
 
 ```{r}
-tibble(place  = c("McElreath's house", "Abu Dhabi"),
-       p_rain = c(.3, .01)) %>% 
-  mutate(p_shine = 1 - p_rain) %>% 
-  group_by(place) %>% 
+tibble(place = c("McElreath's house", "Abu Dhabi"), p_rain = c(.3, .01)) %>%
+  mutate(p_shine = 1 - p_rain) %>%
+  group_by(place) %>%
   mutate(H_p = (p_rain * log(p_rain) + p_shine * log(p_shine)) %>% mean() * -1)
 ```
 
@@ -473,7 +623,7 @@ p <- c(.7, .15, .15)
 
 > How can we use information entropy to say how far a model is from the target? The key lies in **divergence**:
 >
->> **Divergence**: The additional uncertainty induced by using probabilities from one distribution to describe another distribution.
+> > **Divergence**: The additional uncertainty induced by using probabilities from one distribution to describe another distribution.
 >
 > This is often known as *Kullback-Leibler divergence* or simply K-L divergence. [p. 179, **emphasis** in the original, see @kullbackInformationSufficiency1951]
 
@@ -485,18 +635,15 @@ which, in plainer language, is what McElreath described as "the average differen
 
 In McElreath's example
 
-* $p_1 = .3$,
-* $p_2 = .7$,
-* $q_1 = .25$, and
-* $q_2 = .75$.
+- $p_1 = .3$,
+- $p_2 = .7$,
+- $q_1 = .25$, and
+- $q_2 = .75$.
 
 With those values, we can compute $D_\text{KL} (p, q)$ within a tibble like so.
 
 ```{r}
-tibble(p_1 = .3,
-       p_2 = .7,
-       q_1 = .25,
-       q_2 = .75) %>%
+tibble(p_1 = .3, p_2 = .7, q_1 = .25, q_2 = .75) %>%
   mutate(d_kl = (p_1 * log(p_1 / q_1)) + (p_2 * log(p_2 / q_2)))
 ```
 
@@ -505,9 +652,8 @@ Did you notice how we used the formula $D_\text{KL} (p, q) = \sum_i p_i \log \le
 Our systems in this section are binary (e.g., $q = \lbrace q_i, q_2 \rbrace$). Thus if you know $q_1 = .3$ you know of a necessity $q_2 = 1 - q_1$. Therefore we can code the tibble for the next example of when $p = q$ like this.
 
 ```{r}
-tibble(p_1 = .3) %>% 
-  mutate(p_2 = 1 - p_1,
-         q_1 = p_1) %>% 
+tibble(p_1 = .3) %>%
+  mutate(p_2 = 1 - p_1, q_1 = p_1) %>%
   mutate(q_2 = 1 - q_1) %>%
   mutate(d_kl = (p_1 * log(p_1 / q_1)) + (p_2 * log(p_2 / q_2)))
 ```
@@ -515,29 +661,40 @@ tibble(p_1 = .3) %>%
 Building off of that, you can make the data required for Figure 6.6 like this.
 
 ```{r}
-t <- tibble(p_1 = .3,
-            p_2 = .7,
-            q_1 = seq(from = .01, to = .99, by = .01)) %>% 
+t <- tibble(p_1 = .3, p_2 = .7, q_1 = seq(from = .01, to = .99, by = .01)) %>%
   mutate(q_2 = 1 - q_1) %>%
-  mutate(d_kl = (p_1 * log(p_1 / q_1)) + (p_2 * log(p_2 / q_2))) 
+  mutate(d_kl = (p_1 * log(p_1 / q_1)) + (p_2 * log(p_2 / q_2)))
 
 head(t)
 ```
 
 Now we have the data, plotting Figure 6.6 is little more than `geom_line()` with stylistic flourishes.
 
-```{r, fig.width = 3, fig.height = 2.75}
-t %>% 
+```{r}
+#| fig-width: 3
+#| fig-height: 2.75
+
+t %>%
   ggplot(aes(x = q_1, y = d_kl)) +
   geom_vline(xintercept = .3, color = carto_pal(7, "BurgYl")[5], linetype = 2) +
   geom_line(color = carto_pal(7, "BurgYl")[7], linewidth = 1.5) +
-  annotate(geom = "text", x = .4, y = 1.5, label = "q = p",
-           color = carto_pal(7, "BurgYl")[5], family = "Courier", size = 3.5) +
-  labs(x = expression(italic(q)[1]),
-       y = "Divergence of q from p") +
+  annotate(
+    geom = "text",
+    x = .4,
+    y = 1.5,
+    label = "q = p",
+    color = carto_pal(7, "BurgYl")[5],
+    family = "Courier",
+    size = 3.5
+  ) +
+  labs(x = expression(italic(q)[1]), y = "Divergence of q from p") +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)))
+  theme(
+    text = element_text(family = "Courier"),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    )
+  )
 ```
 
 > What divergence can do for us now is help us contrast different approximations to $p$. As an approximating function $q$ becomes more accurate, $D_\text{KL} (p, q)$ will shrink. So if we have a pair of candidate distributions, then the candidate that minimizes the divergence will be closest to the target. Since predictive models specify probabilities of events (observations), we can use divergence to compare the accuracy of models. (p. 180)
@@ -547,11 +704,12 @@ t %>%
 Here we see $H(p, q) \neq H(q, p)$. That is, direction matters.
 
 ```{r}
-tibble(direction = c("Earth to Mars", "Mars to Earth"),
-       p_1 = c(.01, .7),
-       q_1 = c(.7, .01)) %>% 
-  mutate(p_2 = 1 - p_1,
-         q_2 = 1 - q_1) %>%
+tibble(
+  direction = c("Earth to Mars", "Mars to Earth"),
+  p_1 = c(.01, .7),
+  q_1 = c(.7, .01)
+) %>%
+  mutate(p_2 = 1 - p_1, q_2 = 1 - q_1) %>%
   mutate(d_kl = (p_1 * log(p_1 / q_1)) + (p_2 * log(p_2 / q_2)))
 ```
 
@@ -578,9 +736,9 @@ Within the context of science, say we've labeled the true model for our topic of
 Here's the deviance from model `b6.1`.
 
 ```{r}
-lm(data = d,
-   brain ~ mass) %>% 
-  logLik() * -2
+lm(data = d, brain ~ mass) %>%
+  logLik() *
+  -2
 ```
 
 Next we learn how do this by hand.
@@ -596,31 +754,41 @@ d <- d %>%
 
 Open brms.
 
-```{r, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+
 library(brms)
 ```
 
 Now we'll specify the initial values and fit the model.
 
-```{r b6.8}
+```{r}
+#| label: b6.8
+
 # define the starting values
-inits <- list(Intercept = mean(d$brain),
-              mass_s    = 0,
-              sigma     = sd(d$brain))
+inits <- list(Intercept = mean(d$brain), mass_s = 0, sigma = sd(d$brain))
 
 inits_list <- list(inits, inits, inits, inits)
 
 # The model
 b6.8 <- brm(
-  data = d, family = gaussian,
+  data = d,
+  family = gaussian,
   brain ~ 1 + mass_s,
-  prior = c(prior(normal(0, 1000), class = Intercept),
-            prior(normal(0, 1000), class = b),
-            prior(cauchy(0, 10), class = sigma)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
-  init = inits_list,  # here we insert our start values
+  prior = c(
+    prior(normal(0, 1000), class = Intercept),
+    prior(normal(0, 1000), class = b),
+    prior(cauchy(0, 10), class = sigma)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
+  init = inits_list, # here we insert our start values
   seed = 6,
-  file = "fits/b06.08")
+  file = "fits/b06.08"
+)
 ```
 
 ```{r}
@@ -634,7 +802,7 @@ Anyway, the brms `log_lik()` function returns a matrix. Each occasion gets a col
 ```{r}
 ll <- b6.8 %>%
   log_lik() %>%
-  data.frame() %>% 
+  data.frame() %>%
   set_names(d %>% pull(species))
 
 ll %>%
@@ -645,28 +813,42 @@ Deviance, recall, is the sum of the occasion-level LLs multiplied by -2: $D(q) =
 
 ```{r}
 ll <- ll %>%
-  mutate(sums     = rowSums(.),
-         deviance = -2 * sums)
+  mutate(sums = rowSums(.), deviance = -2 * sums)
 
 glimpse(ll)
 ```
 
 Because we used HMC, deviance is a distribution rather than a single number. That is, we have a deviance $D(q)$ value for each row, for each HMC iteration.
 
-```{r, fig.width = 4, fig.height = 2.5, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+#| fig-width: 4
+#| fig-height: 2.5
+
 library(tidybayes)
 
 ll %>%
   ggplot(aes(x = deviance, y = 0)) +
-  geom_halfeyeh(point_interval = median_qi, .width = .95,
-                fill = carto_pal(7, "BurgYl")[5], color = carto_pal(7, "BurgYl")[7]) +
-  scale_x_continuous(breaks = quantile(ll$deviance, c(.025, .5, .975)),
-                     labels = quantile(ll$deviance, c(.025, .5, .975)) %>% round(1)) +
+  geom_halfeyeh(
+    point_interval = median_qi,
+    .width = .95,
+    fill = carto_pal(7, "BurgYl")[5],
+    color = carto_pal(7, "BurgYl")[7]
+  ) +
+  scale_x_continuous(
+    breaks = quantile(ll$deviance, c(.025, .5, .975)),
+    labels = quantile(ll$deviance, c(.025, .5, .975)) %>% round(1)
+  ) +
   scale_y_continuous(NULL, breaks = NULL) +
   ggtitle("The deviance distribution") +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)))
+  theme(
+    text = element_text(family = "Courier"),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    )
+  )
 ```
 
 But notice our deviance distribution was centered right around the sole value McElreath reported in the text.
@@ -681,37 +863,37 @@ In the next subsection, we'll see this in a simulation which will produce the da
 
 I find the `rethinking::sim.train.test()` function opaque. If you're curious, you can find McElreath's code [here](https://github.com/rmcelreath/rethinking/blob/a309712d904d1db7af1e08a76c521ab994006fd5/R/sim_train_test.R). Let's simulate and see what happens.
 
-```{r, eval = F}
+```{r}
+#| eval: false
+
 library(rethinking)
 
-n       <- 20
-kseq    <- 1:5
-n_sim   <- 1e4
+n <- 20
+kseq <- 1:5
+n_sim <- 1e4
 n_cores <- 4
 
 # here's our dev object based on `N <- 20`
 dev_20 <- sapply(kseq, function(k) {
-  print(k);
-  r <- mcreplicate(n_sim, sim.train.test(N = n, k = k),
-                   mc.cores = n_cores);
+  print(k)
+  r <- mcreplicate(n_sim, sim.train.test(N = n, k = k), mc.cores = n_cores)
   c(mean(r[1, ]), mean(r[2, ]), sd(r[1, ]), sd(r[2, ]))
-}
-)
+})
 
 # here's our dev object based on N <- 100
-n       <- 100
+n <- 100
 dev_100 <- apply(kseq, function(k) {
-  print(k);
-  r <- mcreplicate(n_sim, sim.train.test(N = n, k = k), 
-                   mc.cores = n_cores);
+  print(k)
+  r <- mcreplicate(n_sim, sim.train.test(N = n, k = k), mc.cores = n_cores)
   c(mean(r[1, ]), mean(r[2, ]), sd(r[1, ]), sd(r[2, ]))
-}
-)
+})
 ```
 
-```{r, echo = F}
-# that simulation takes 20.11006 mins to complete. Instead of completing it on the fly 
-# for each update, I've saved the results in an external file. 
+```{r}
+#| echo: false
+
+# that simulation takes 20.11006 mins to complete. Instead of completing it on the fly
+# for each update, I've saved the results in an external file.
 
 # save(list = c("dev_100", "dev_20", "kseq", "n_sim", "n_cores"), file = "sims/06.sim_1.rda")
 
@@ -720,16 +902,23 @@ load("sims/06.sim_1.rda")
 
 If you didn't quite catch it, the simulation yields `dev_20` and `dev_100`. We'll want to convert them to tibbles, bind them together, and wrangle extensively before we're ready to plot.
 
-```{r, message = F, warning = F}
-dev_tibble <- rbind(dev_20, dev_100) %>% 
-  data.frame() %>% 
-  mutate(n         = rep(c("n = 20", "n = 100"), each = 4),
-         statistic = rep(c("mean", "sd"), each = 2) %>% rep(., times = 2),
-         sample    = rep(c("in", "out"), times = 2) %>% rep(., times = 2)) %>% 
-  gather(n_par, value, -n, -statistic, -sample) %>% 
-  spread(key = statistic, value = value) %>% 
-  mutate(n     = factor(n, levels = c("n = 20", "n = 100")),
-         n_par = str_remove(n_par, "X") %>% as.double()) %>% 
+```{r}
+#| message: false
+#| warning: false
+
+dev_tibble <- rbind(dev_20, dev_100) %>%
+  data.frame() %>%
+  mutate(
+    n = rep(c("n = 20", "n = 100"), each = 4),
+    statistic = rep(c("mean", "sd"), each = 2) %>% rep(., times = 2),
+    sample = rep(c("in", "out"), times = 2) %>% rep(., times = 2)
+  ) %>%
+  gather(n_par, value, -n, -statistic, -sample) %>%
+  spread(key = statistic, value = value) %>%
+  mutate(
+    n = factor(n, levels = c("n = 20", "n = 100")),
+    n_par = str_remove(n_par, "X") %>% as.double()
+  ) %>%
   mutate(n_par = ifelse(sample == "in", n_par - .075, n_par + .075))
 
 head(dev_tibble)
@@ -737,31 +926,47 @@ head(dev_tibble)
 
 Now we're ready to make Figure 6.7.
 
-```{r, fig.width = 6, fig.height = 3}
+```{r}
+#| fig-width: 6
+#| fig-height: 3
+
 # this intermediary tibble will make `geom_text()` easier
-dev_text <- dev_tibble %>% 
-  filter(n_par > 1.5, 
-         n_par < 2.5) %>% 
+dev_text <- dev_tibble %>%
+  filter(n_par > 1.5, n_par < 2.5) %>%
   mutate(n_par = ifelse(sample == "in", n_par - .25, n_par + .33))
-  
+
 # the plot
-dev_tibble %>% 
-  ggplot(aes(x = n_par, y = mean,
-             ymin = mean - sd, ymax = mean + sd,
-             group = sample, color = sample, fill  = sample)) +
+dev_tibble %>%
+  ggplot(aes(
+    x = n_par,
+    y = mean,
+    ymin = mean - sd,
+    ymax = mean + sd,
+    group = sample,
+    color = sample,
+    fill = sample
+  )) +
   geom_pointrange(shape = 21) +
-  geom_text(data = dev_text,
-            aes(label = sample),
-            family = "Courier") +
-  scale_color_manual(values = c(carto_pal(7, "BurgYl")[7], carto_pal(7, "BurgYl")[5])) +
-  scale_fill_manual(values  = c(carto_pal(7, "BurgYl")[5], carto_pal(7, "BurgYl")[7])) +
-  labs(x = "number of parameters",
-       y = "deviance") +
+  geom_text(data = dev_text, aes(label = sample), family = "Courier") +
+  scale_color_manual(
+    values = c(carto_pal(7, "BurgYl")[7], carto_pal(7, "BurgYl")[5])
+  ) +
+  scale_fill_manual(
+    values = c(carto_pal(7, "BurgYl")[5], carto_pal(7, "BurgYl")[7])
+  ) +
+  labs(x = "number of parameters", y = "deviance") +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        legend.position = "none",
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)),
-        strip.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[1], 1/4), color = "white")) +
+  theme(
+    text = element_text(family = "Courier"),
+    legend.position = "none",
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    ),
+    strip.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[1], 1 / 4),
+      color = "white"
+    )
+  ) +
   facet_wrap(~n, scale = "free_y")
 ```
 
@@ -777,53 +982,79 @@ Our simulation results matched up well with those in the text.
 
 In case you were curious, here's how you might do Figure 6.8 with ggplot2. All the action is in the `geom_ribbon()` portions.
 
-```{r, fig.width = 3, fig.height = 3}
+```{r}
+#| fig-width: 3
+#| fig-height: 3
+
 tibble(x = seq(from = -3.5, to = 3.5, by = 0.01)) %>%
   ggplot(aes(x = x, ymin = 0)) +
-  geom_ribbon(aes(ymax = dnorm(x, mean = 0, sd = 0.2)), 
-              fill = carto_pal(7, "BurgYl")[7], alpha = 1/2) +
-  geom_ribbon(aes(ymax = dnorm(x, mean = 0, sd = 0.5)), 
-              fill = carto_pal(7, "BurgYl")[6], alpha = 1/2) +
-  geom_ribbon(aes(ymax = dnorm(x, mean = 0, sd = 1)), 
-              fill = carto_pal(7, "BurgYl")[5], alpha = 1/2) +
+  geom_ribbon(
+    aes(ymax = dnorm(x, mean = 0, sd = 0.2)),
+    fill = carto_pal(7, "BurgYl")[7],
+    alpha = 1 / 2
+  ) +
+  geom_ribbon(
+    aes(ymax = dnorm(x, mean = 0, sd = 0.5)),
+    fill = carto_pal(7, "BurgYl")[6],
+    alpha = 1 / 2
+  ) +
+  geom_ribbon(
+    aes(ymax = dnorm(x, mean = 0, sd = 1)),
+    fill = carto_pal(7, "BurgYl")[5],
+    alpha = 1 / 2
+  ) +
   scale_y_continuous(NULL, breaks = NULL) +
   xlab("parameter value") +
   coord_cartesian(xlim = c(-3, 3)) +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)))
+  theme(
+    text = element_text(family = "Courier"),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    )
+  )
 ```
 
 In our version of the plot, darker purple = more regularizing.
 
 But to prepare for Figure 6.9, let's simulate. This time we'll wrap the basic simulation code we used before into a function we'll call `make_sim()`. Our `make_sim()` function has two parameters, `N` and `b_sigma`, both of which come from McElreath's simulation code. So you'll note that instead of hard coding the values for `N` and `b_sigma` within the simulation, we're leaving them adjustable (i.e., `sim.train.test(N = n, k = k, b_sigma = b_sigma)`). Also notice that instead of saving the simulation results as objects, like before, we're just converting them to data frames with the `data.frame()` function at the bottom. Our goal is to use `make_sim()` within a `purrr::map2()` statement. The result will be a nested tibble into which we've saved the results of 6 simulations based off of two sample sizes (i.e., `n = c(20, 100)`) and three values of $\sigma$ for our Gaussian $\beta$ prior (i.e., `b_sigma = c(1, .5, .2)`).
 
-```{r, eval = F}
+```{r}
+#| eval: false
+
 library(rethinking)
 
 n_sim <- 1e4
 
 make_sim <- function(n, b_sigma) {
   sapply(kseq, function(k) {
-    print(k);
+    print(k)
     # this is an augmented line of code
-    r <- mcreplicate(n_sim, sim.train.test(N = n, k = k, b_sigma = b_sigma),
-                     mc.cores = n_cores);
-    c(mean(r[1, ]), mean(r[2, ]), sd(r[1, ]), sd(r[2, ])) }) %>% 
-    
+    r <- mcreplicate(
+      n_sim,
+      sim.train.test(N = n, k = k, b_sigma = b_sigma),
+      mc.cores = n_cores
+    )
+    c(mean(r[1, ]), mean(r[2, ]), sd(r[1, ]), sd(r[2, ]))
+  }) %>%
+
     # this is a new line of code
     data.frame()
 }
 
-s <- tibble(n       = rep(c(20, 100), each = 3),
-            b_sigma = rep(c(1, .5, .2), times = 2)) %>% 
-  mutate(sim = map2(n, b_sigma, make_sim)) %>% 
+s <- tibble(
+  n = rep(c(20, 100), each = 3),
+  b_sigma = rep(c(1, .5, .2), times = 2)
+) %>%
+  mutate(sim = map2(n, b_sigma, make_sim)) %>%
   unnest(cols = c(sim))
 ```
 
-```{r, echo = F}
+```{r}
+#| echo: false
+
 # That simulation takes 51.89283 mins to complete. Instead of completing it on the fly for each
-# update, I've saved the results in an external file. 
+# update, I've saved the results in an external file.
 
 # save("s", file = "sims/06.sim_2.rda")
 
@@ -832,40 +1063,66 @@ load("sims/06.sim_2.rda")
 
 We'll follow the same principles for wrangling these data as we did those from the previous simulation, `dev_tibble`. And after wrangling, we'll feed the data directly into the code for our version of Figure 6.9.
 
-```{r, fig.width = 6, fig.height = 3, warning = F}
+```{r}
+#| warning: false
+#| fig-width: 6
+#| fig-height: 3
+
 # wrangle the simulation data
-s %>% 
-  mutate(statistic = rep(c("mean", "sd"), each = 2) %>% rep(., times = 3 * 2),
-         sample    = rep(c("in", "out"), times = 2) %>% rep(., times = 3 * 2)) %>% 
-  gather(n_par, value, -n, -b_sigma, -statistic, -sample) %>% 
-  spread(key = statistic, value = value) %>% 
-  mutate(n     = str_c("n = ", n) %>% factor(., levels = c("n = 20", "n = 100")),
-         n_par = str_remove(n_par, "V") %>% as.double(),
-         b_sigma = factor(b_sigma,
-                          levels = c(0.2, 0.5, 1),
-                          labels = c("N(0, 0.2)", "N(0, 0.5)", "N(0, 1.0)"))) %>% 
-  
+s %>%
+  mutate(
+    statistic = rep(c("mean", "sd"), each = 2) %>% rep(., times = 3 * 2),
+    sample = rep(c("in", "out"), times = 2) %>% rep(., times = 3 * 2)
+  ) %>%
+  gather(n_par, value, -n, -b_sigma, -statistic, -sample) %>%
+  spread(key = statistic, value = value) %>%
+  mutate(
+    n = str_c("n = ", n) %>% factor(., levels = c("n = 20", "n = 100")),
+    n_par = str_remove(n_par, "V") %>% as.double(),
+    b_sigma = factor(
+      b_sigma,
+      levels = c(0.2, 0.5, 1),
+      labels = c("N(0, 0.2)", "N(0, 0.5)", "N(0, 1.0)")
+    )
+  ) %>%
+
   # now plot
-  ggplot(aes(x = n_par, y = mean,
-             group = interaction(sample, b_sigma))) +
+  ggplot(aes(x = n_par, y = mean, group = interaction(sample, b_sigma))) +
   geom_line(aes(color = sample, size = b_sigma)) +
   # this function contains the data from the previous simulation
-  geom_point(data = dev_tibble, 
-             aes(group = sample, fill = sample),
-             color = "black", shape = 21, size = 2.5, stroke = .1) +
-  scale_fill_manual(values = c(carto_pal(7, "BurgYl")[7], carto_pal(7, "BurgYl")[5]), breaks = NULL) +
-  scale_color_manual(values = c(carto_pal(7, "BurgYl")[7], carto_pal(7, "BurgYl")[5]), breaks = NULL) +
+  geom_point(
+    data = dev_tibble,
+    aes(group = sample, fill = sample),
+    color = "black",
+    shape = 21,
+    size = 2.5,
+    stroke = .1
+  ) +
+  scale_fill_manual(
+    values = c(carto_pal(7, "BurgYl")[7], carto_pal(7, "BurgYl")[5]),
+    breaks = NULL
+  ) +
+  scale_color_manual(
+    values = c(carto_pal(7, "BurgYl")[7], carto_pal(7, "BurgYl")[5]),
+    breaks = NULL
+  ) +
   scale_size_manual(NULL, values = c(1, .5, .2)) +
-  labs(x = "number of parameters",
-       y = "deviance") +
+  labs(x = "number of parameters", y = "deviance") +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        legend.background = element_blank(),
-        legend.key.height = unit(0.15, "in"),
-        legend.position = c(.1, .15),
-        legend.text = element_text(size = 7),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)),
-        strip.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[1], 1/4), color = "white")) +
+  theme(
+    text = element_text(family = "Courier"),
+    legend.background = element_blank(),
+    legend.key.height = unit(0.15, "in"),
+    legend.position = c(.1, .15),
+    legend.text = element_text(size = 7),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    ),
+    strip.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[1], 1 / 4),
+      color = "white"
+    )
+  ) +
   facet_wrap(~n, scale = "free_y")
 ```
 
@@ -894,40 +1151,49 @@ And to dive even deeper into the horseshoe prior, check out Michael Betancourt's
 The data from our initial simulation isn't formatted well to plot Figure 6.10. We'll have to wrangle a little.
 
 ```{r}
-(
-  dev_tibble <- dev_tibble %>% 
-  select(-sd) %>% 
-  mutate(n_par = ifelse(sample == "in", n_par + .075, n_par - .075)) %>% 
-  spread(key = sample, value = mean) %>% 
-  mutate(height = (out - `in`) %>% round(digits = 1) %>% as.character(),
-         dash   = `in` + 2 * n_par)
-)
+(dev_tibble <- dev_tibble %>%
+  select(-sd) %>%
+  mutate(n_par = ifelse(sample == "in", n_par + .075, n_par - .075)) %>%
+  spread(key = sample, value = mean) %>%
+  mutate(
+    height = (out - `in`) %>% round(digits = 1) %>% as.character(),
+    dash = `in` + 2 * n_par
+  ))
 ```
 
 Now we're ready to plot.
 
-```{r, fig.width = 6, fig.height = 3}
-dev_tibble  %>% 
+```{r}
+#| fig-width: 6
+#| fig-height: 3
+
+dev_tibble %>%
   ggplot(aes(x = n_par)) +
-  geom_line(aes(y = dash),
-            linetype = 2, color = carto_pal(7, "BurgYl")[5]) +
-  geom_point(aes(y = `in`),
-             color = carto_pal(7, "BurgYl")[7], size = 2) +
-  geom_point(aes(y = out),
-             color = carto_pal(7, "BurgYl")[5], size = 2) +
-  geom_errorbar(aes(x = n_par + .15,
-                    ymin = `in`, ymax = out),
-                width = 0.1, linewidth = 1/3) +
-  geom_text(aes(x = n_par + .4,
-                y = (out + `in`) / 2,
-                label = height),
-            family = "Courier", size = 3) +
-  labs(x = "number of parameters",
-       y = "deviance") +
+  geom_line(aes(y = dash), linetype = 2, color = carto_pal(7, "BurgYl")[5]) +
+  geom_point(aes(y = `in`), color = carto_pal(7, "BurgYl")[7], size = 2) +
+  geom_point(aes(y = out), color = carto_pal(7, "BurgYl")[5], size = 2) +
+  geom_errorbar(
+    aes(x = n_par + .15, ymin = `in`, ymax = out),
+    width = 0.1,
+    linewidth = 1 / 3
+  ) +
+  geom_text(
+    aes(x = n_par + .4, y = (out + `in`) / 2, label = height),
+    family = "Courier",
+    size = 3
+  ) +
+  labs(x = "number of parameters", y = "deviance") +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)),
-        strip.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[1], 1/4), color = "white")) +
+  theme(
+    text = element_text(family = "Courier"),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    ),
+    strip.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[1], 1 / 4),
+      color = "white"
+    )
+  ) +
   facet_wrap(~n, scale = "free_y")
 ```
 
@@ -950,15 +1216,15 @@ And $p_D$ is the number of effective parameters in the model, which is also some
 I'm also not aware of an easy to compute the DIC by hand the way we've been doing, so far. I'll walk it out with our model `b6.8`. Remember how we had an entire posterior distribution for the deviance?
 
 ```{r}
-ll %>% 
-  select(deviance) %>% 
+ll %>%
+  select(deviance) %>%
   glimpse()
 ```
 
 If we call that deviance distribution $D$, we might refer to its mean as $\bar D$. Here's $\bar D$ for `b6.8`.
 
 ```{r}
-ll %>% 
+ll %>%
   summarise(d_bar = mean(deviance))
 ```
 
@@ -982,10 +1248,10 @@ It's okay that the brms and loo packages don't yield the DIC because the Widely 
 >
 > You might say this out loud as:
 >
->> *The log-pointwise-predictive-density is the total across observations of the logarithm of the average likelihood of each observation.*
+> > *The log-pointwise-predictive-density is the total across observations of the logarithm of the average likelihood of each observation.*
 >
->... The second piece of WAIC is the effect number of parameters $p_\text{WAIC}$. Define $V(y_i)$ as the variance in log-likelihood for observation $i$ in the training sample. This means we compute the log-likelihood for observation $y_i$ for each sample from the posterior distribution. Then we take the variance of those values. This is $V(y_i)$. Now $p_\text{WAIC}$ is defined as:
-> 
+> ... The second piece of WAIC is the effect number of parameters $p_\text{WAIC}$. Define $V(y_i)$ as the variance in log-likelihood for observation $i$ in the training sample. This means we compute the log-likelihood for observation $y_i$ for each sample from the posterior distribution. Then we take the variance of those values. This is $V(y_i)$. Now $p_\text{WAIC}$ is defined as:
+>
 > $$p_\text{WAIC} = \sum_{i=1}^N V (y_i)$$
 >
 > Now WAIC is defined as:
@@ -1000,18 +1266,27 @@ You'll see how to compute the WAIC in brms in just a bit.
 
 Here is how to fit the pre-WAIC model in brms.
 
-```{r b6.0_waic}
+```{r}
+#| label: b6.0_waic
+
 data(cars)
 
 b6.0_waic <- brm(
-  data = cars, family = gaussian,
+  data = cars,
+  family = gaussian,
   dist ~ 1 + speed,
-  prior = c(prior(normal(0, 100), class = Intercept),
-            prior(normal(0, 10), class = b),
-            prior(uniform(0, 30), class = sigma, ub = 30)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(normal(0, 100), class = Intercept),
+    prior(normal(0, 10), class = b),
+    prior(uniform(0, 30), class = sigma, ub = 30)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   seed = 6,
-  file = "fits/b06.00_waic")
+  file = "fits/b06.00_waic"
+)
 ```
 
 Here's the summary.
@@ -1022,7 +1297,10 @@ print(b6.0_waic)
 
 To refresh, you return the log-likelihood values for a brms model with `log_lik()`.
 
-```{r, results = "hide", message = F}
+```{r}
+#| message: false
+#| results: "hide"
+
 ll <- b6.0_waic %>%
   log_lik() %>%
   data.frame()
@@ -1034,31 +1312,33 @@ $$\text{lppd} = \sum_{i = 1}^N \log \Pr(y_i).$$
 
 We'll do it in two steps, saving the $\log \Pr(y_i)$ and the $\text{lppd}$ as two objects.
 
-```{r, message = F}
+```{r}
+#| message: false
+
 log_p_y <- ll %>%
-  gather(case, loglikelihood) %>% 
-  mutate(likelihood = exp(loglikelihood)) %>% 
-  group_by(case) %>% 
+  gather(case, loglikelihood) %>%
+  mutate(likelihood = exp(loglikelihood)) %>%
+  group_by(case) %>%
   summarise(log_mean_likelihood = mean(likelihood) %>% log())
 
-(
-  lppd <- log_p_y %>% 
+(lppd <- log_p_y %>%
   pull(log_mean_likelihood) %>%
   # sum the logarighms of the casewise mean likelihoods
-  sum()
-)
+  sum())
 ```
 
 We'll follow a similar process for computing the $p_\text{WAIC}$. We'll save the casewise variance in log-likelihood values, $V(y_i)$, separately from their sum, the $p_\text{WAIC}$.
 
-```{r, message = F}
+```{r}
+#| message: false
+
 v_i <- ll %>%
-  gather(case, loglikelihood) %>% 
-  group_by(case) %>% 
+  gather(case, loglikelihood) %>%
+  group_by(case) %>%
   summarise(var_loglikelihood = var(loglikelihood))
 
 pwaic <- v_i %>%
-  pull(var_loglikelihood) %>% 
+  pull(var_loglikelihood) %>%
   sum()
 
 pwaic
@@ -1066,7 +1346,10 @@ pwaic
 
 Now we can finally plug our hand-made `lppd` and `pwaic` values into the formula $-2 (\text{lppd} - p_\text{WAIC})$ to compute the WAIC. Compare it to the value returned by the brms `waic()` function.
 
-```{r, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+
 -2 * (lppd - pwaic)
 
 waic(b6.0_waic)
@@ -1081,9 +1364,11 @@ lppd - pwaic
 That tidbit will come in handy a little bit later. But for now, here's how we compute the WAIC standard error.
 
 ```{r}
-bind_cols(log_p_y %>% select(log_mean_likelihood),
-          v_i     %>% select(var_loglikelihood)) %>% 
-  mutate(waic_vec = -2 * (log_mean_likelihood - var_loglikelihood)) %>% 
+bind_cols(
+  log_p_y %>% select(log_mean_likelihood),
+  v_i %>% select(var_loglikelihood)
+) %>%
+  mutate(waic_vec = -2 * (log_mean_likelihood - var_loglikelihood)) %>%
   summarise(waic_se = (var(waic_vec) * nrow(log_p_y)) %>% sqrt())
 ```
 
@@ -1091,43 +1376,52 @@ bind_cols(log_p_y %>% select(log_mean_likelihood),
 
 Once again, we'll wrap McElreath's `sim.train.test()`-based simulation code within a custom function, `make_sim()`. This time we've adjusted `make_sim()` to take one argument, `b_sigma`. We will then feed that value into the same-named argument within `sim.train.test()`. Also notice that within `sim.train.test()`, we've specified `TRUE` for the information criteria and deviance arguments. Be warned: it takes extra time to compute the WAIC. Because we do that for every model, this simulation takes longer than the previous ones. To get a taste, try running it with something like `n_sim <- 5` first.
 
-```{r, eval = F}
+```{r}
+#| eval: false
+
 n_sim <- 1e4
 
 make_sim <- function(b_sigma) {
   sapply(kseq, function(k) {
-    print(k);
-    r <- mcreplicate(n_sim, 
-                     sim.train.test(N         = 20,
-                                    k         = k,
-                                    b_sigma   = b_sigma,
-                                    DIC       = T,
-                                    WAIC      = T, 
-                                    devbar    = T, 
-                                    devbarout = T),
-                     mc.cores = n_cores);
-    
-    c(dev_in    = mean(r[1, ]),
-      dev_out   = mean(r[2, ]),
-      DIC       = mean(r[3, ]), 
-      WAIC      = mean(r[4, ]), 
-      devbar    = mean(r[5, ]), 
-      devbarout = mean(r[6, ])) 
-  }
-  ) %>% 
-    data.frame() %>% 
-    rownames_to_column() %>% 
+    print(k)
+    r <- mcreplicate(
+      n_sim,
+      sim.train.test(
+        N = 20,
+        k = k,
+        b_sigma = b_sigma,
+        DIC = T,
+        WAIC = T,
+        devbar = T,
+        devbarout = T
+      ),
+      mc.cores = n_cores
+    )
+
+    c(
+      dev_in = mean(r[1, ]),
+      dev_out = mean(r[2, ]),
+      DIC = mean(r[3, ]),
+      WAIC = mean(r[4, ]),
+      devbar = mean(r[5, ]),
+      devbarout = mean(r[6, ])
+    )
+  }) %>%
+    data.frame() %>%
+    rownames_to_column() %>%
     rename(statistic = rowname)
 }
 
-s <- tibble(b_sigma = c(100, .5)) %>% 
-  mutate(sim = purrr::map(b_sigma, make_sim)) %>% 
+s <- tibble(b_sigma = c(100, .5)) %>%
+  mutate(sim = purrr::map(b_sigma, make_sim)) %>%
   unnest(sim)
 ```
 
-```{r, echo = F}
-# That simulation takes 3.682589 hours to complete. Instead of completing it on the fly 
-# for each update, I've saved the results in an external file. 
+```{r}
+#| echo: false
+
+# That simulation takes 3.682589 hours to complete. Instead of completing it on the fly
+# for each update, I've saved the results in an external file.
 
 # save("s", file = "sims/06.sim_3.rda")
 
@@ -1136,43 +1430,56 @@ load("sims/06.sim_3.rda")
 
 Here we wrangle and plot.
 
-```{r, fig.height = 4.5, fig.width = 3.25}
+```{r}
+#| fig-height: 4.5
+#| fig-width: 3.25
+
 # for annotation
 text <- tibble(
-  n_par   = c(2, 4),
-  value   = c(57, 58.6),
-  label   = c("N(0, 0.5)", "N(0, 100)"),
+  n_par = c(2, 4),
+  value = c(57, 58.6),
+  label = c("N(0, 0.5)", "N(0, 100)"),
   b_sigma = c("0.5", "100"),
-  ic      = "DIC")
+  ic = "DIC"
+)
 
 # wrangle the simulation results
-s %>% 
-  gather(n_par, value, -b_sigma, -statistic) %>% 
-  mutate(n_par = str_remove(n_par, "X") %>% as.double()) %>% 
-  filter(statistic != "devbar" & statistic != "devbarout") %>% 
-  spread(key = statistic, value = value) %>% 
-  gather(ic, value, -b_sigma, -n_par, -dev_in, -dev_out) %>% 
-  gather(sample, deviance, -b_sigma, -n_par, -ic, -value) %>% 
-  filter(sample == "dev_out") %>% 
-  mutate(b_sigma = b_sigma %>% as.character()) %>% 
-  
+s %>%
+  gather(n_par, value, -b_sigma, -statistic) %>%
+  mutate(n_par = str_remove(n_par, "X") %>% as.double()) %>%
+  filter(statistic != "devbar" & statistic != "devbarout") %>%
+  spread(key = statistic, value = value) %>%
+  gather(ic, value, -b_sigma, -n_par, -dev_in, -dev_out) %>%
+  gather(sample, deviance, -b_sigma, -n_par, -ic, -value) %>%
+  filter(sample == "dev_out") %>%
+  mutate(b_sigma = b_sigma %>% as.character()) %>%
+
   # plot!
   ggplot(aes(x = n_par, color = b_sigma)) +
-  geom_point(aes(y = deviance),
-             size = 2.5) +
+  geom_point(aes(y = deviance), size = 2.5) +
   geom_line(aes(y = value, group = b_sigma)) +
-  geom_text(data = text,
-            aes(y = value, label = label),
-            family = "Courier", size = 3) +
-  scale_color_manual(values = c(carto_pal(7, "BurgYl")[7], carto_pal(7, "BurgYl")[5])) +
-  labs(subtitle = "n = 20",
-       x = "number of parameters",
-       y = "deviance") +
+  geom_text(
+    data = text,
+    aes(y = value, label = label),
+    family = "Courier",
+    size = 3
+  ) +
+  scale_color_manual(
+    values = c(carto_pal(7, "BurgYl")[7], carto_pal(7, "BurgYl")[5])
+  ) +
+  labs(subtitle = "n = 20", x = "number of parameters", y = "deviance") +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        legend.position = "none",
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)),
-        strip.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[1], 1/4), color = "white")) +
+  theme(
+    text = element_text(family = "Courier"),
+    legend.position = "none",
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    ),
+    strip.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[1], 1 / 4),
+      color = "white"
+    )
+  ) +
   facet_wrap(~ic, ncol = 1)
 ```
 
@@ -1194,7 +1501,10 @@ In contrast to model selection, "this section provides a brief example of model 
 
 Load the `milk` data from earlier in the text.
 
-```{r, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+
 library(rethinking)
 data(milk)
 
@@ -1214,73 +1524,101 @@ dim(d)
 
 Load brms.
 
-```{r, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+
 detach(package:rethinking, unload = T)
 library(brms)
 ```
 
 We're ready to fit the competing `kcal.per.g` models. Note our use of `update()` in the last two models.
 
-```{r b6.11, warning = F, message = F}
-inits <- list(Intercept = mean(d$kcal.per.g),
-              sigma     = sd(d$kcal.per.g))
+```{r}
+#| warning: false
+#| message: false
+#| label: b6.11
 
-inits_list <-list(inits, inits, inits, inits)
+inits <- list(Intercept = mean(d$kcal.per.g), sigma = sd(d$kcal.per.g))
+
+inits_list <- list(inits, inits, inits, inits)
 
 b6.11 <- brm(
-  data = d, 
+  data = d,
   family = gaussian,
   kcal.per.g ~ 1,
-  prior = c(prior(uniform(-1000, 1000), class = Intercept),
-            prior(uniform(0, 100), class = sigma, ub = 100)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(uniform(-1000, 1000), class = Intercept),
+    prior(uniform(0, 100), class = sigma, ub = 100)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   init = inits_list,
   seed = 6,
-  file = "fits/b06.11")
+  file = "fits/b06.11"
+)
 
-inits <- list(Intercept = mean(d$kcal.per.g),
-              neocortex = 0,
-              sigma     = sd(d$kcal.per.g))
-inits_list <-list(inits, inits, inits, inits)
+inits <- list(
+  Intercept = mean(d$kcal.per.g),
+  neocortex = 0,
+  sigma = sd(d$kcal.per.g)
+)
+inits_list <- list(inits, inits, inits, inits)
 
 b6.12 <- brm(
-  data = d, 
+  data = d,
   family = gaussian,
   kcal.per.g ~ 1 + neocortex,
-  prior = c(prior(uniform(-1000, 1000), class = Intercept),
-            prior(uniform(-1000, 1000), class = b),
-            prior(uniform(0, 100), class = sigma, ub = 100)),
-  iter = 2000, warmup = 1000, chains = 4, cores = 4,
+  prior = c(
+    prior(uniform(-1000, 1000), class = Intercept),
+    prior(uniform(-1000, 1000), class = b),
+    prior(uniform(0, 100), class = sigma, ub = 100)
+  ),
+  iter = 2000,
+  warmup = 1000,
+  chains = 4,
+  cores = 4,
   init = inits_list,
   seed = 6,
-  file = "fits/b06.12")
+  file = "fits/b06.12"
+)
 
-inits <- list(Intercept   = mean(d$kcal.per.g),
-              `log(mass)` = 0,
-              sigma       = sd(d$kcal.per.g))
-inits_list <-list(inits, inits, inits, inits)
+inits <- list(
+  Intercept = mean(d$kcal.per.g),
+  `log(mass)` = 0,
+  sigma = sd(d$kcal.per.g)
+)
+inits_list <- list(inits, inits, inits, inits)
 
 b6.13 <- update(
-  b6.12, 
+  b6.12,
   newdata = d,
   formula = kcal.per.g ~ 1 + log(mass),
   init = inits_list,
-  chains = 4, cores = 4,
-  file = "fits/b06.13")
+  chains = 4,
+  cores = 4,
+  file = "fits/b06.13"
+)
 
-inits <- list(Intercept   = mean(d$kcal.per.g),
-              neocortex   = 0,
-              `log(mass)` = 0,
-              sigma       = sd(d$kcal.per.g))
-inits_list <-list(inits, inits, inits, inits)
+inits <- list(
+  Intercept = mean(d$kcal.per.g),
+  neocortex = 0,
+  `log(mass)` = 0,
+  sigma = sd(d$kcal.per.g)
+)
+inits_list <- list(inits, inits, inits, inits)
 
 b6.14 <- update(
-  b6.13, 
+  b6.13,
   newdata = d,
   formula = kcal.per.g ~ 1 + neocortex + log(mass),
   init = inits_list,
-  chains = 4, cores = 4,
-  file = "fits/b06.14")
+  chains = 4,
+  cores = 4,
+  file = "fits/b06.14"
+)
 ```
 
 > The priors are all flat above, which is clearly not the best idea. But his will let you get a sense of what the sample alone says, in the absence of regularization, and how WAIC measures overfitting. Then in the problems at the end of the chapter, you'll explore regularization. (p. 197)
@@ -1297,7 +1635,11 @@ Note the warning message. Statisticians have made notable advances in Bayesian i
 
 There are a few ways to approach information criteria within the brms framework. If all you want are the quick results for a model, just plug the name of your `brm()` fit object into the `waic()` function.
 
-```{r w_b6.11, message = F, warning = F}
+```{r}
+#| message: false
+#| warning: false
+#| label: w_b6.11
+
 waic(b6.11)
 ```
 
@@ -1317,15 +1659,17 @@ b6.11$criteria$waic
 
 *Why would I go through all that trouble?*, you might ask. Well, two reasons. First, now your WAIC information is saved with all the rest of your fit output, which can be convenient. But second, it sets you up to use the `loo_compare()` function to compare models by their information criteria. To get a sense of that workflow, here we use `add_criterion()` for the next three models. Then we'll use `loo_compare()`.
 
-```{r w_b6.12_through_b6.14, warning = F}
+```{r}
+#| warning: false
+#| label: w_b6.12_through_b6.14
+
 # compute and save the WAIC information for the next three models
 b6.12 <- add_criterion(b6.12, criterion = "waic")
 b6.13 <- add_criterion(b6.13, criterion = "waic")
 b6.14 <- add_criterion(b6.14, criterion = "waic")
 
 # compare the WAIC estimates
-w <- loo_compare(b6.11, b6.12, b6.13, b6.14,
-                 criterion = "waic")
+w <- loo_compare(b6.11, b6.12, b6.13, b6.14, criterion = "waic")
 
 print(w)
 ```
@@ -1335,8 +1679,7 @@ You don't have to save those results as an object like we just did with `w`. But
 So here's the deal. The substantive interpretations of the differences presented in an `elpd_diff` metric will be the same as if presented in a WAIC metric. But if we want to compare our `elpd_diff` results to those in the text, we will have to multiply them by -2. And also, if we want the associated standard error in the same metric, we'll need to multiply the `se_diff` column by 2. You wouldn't multiply by -2 because that would return a negative standard error, which would be silly. Here's a quick way to do those conversions.
 
 ```{r}
-cbind(waic_diff = w[, 1] * -2,
-      se        = w[, 2] * 2)
+cbind(waic_diff = w[, 1] * -2, se = w[, 2] * 2)
 ```
 
 One more thing. On page 198, and on many other pages to follow in the text, McElreath used the `rethinking::compare()` function to return a rich table of information about the WAIC information for several models. If we're tricky, we can do something similar with `loo_compare`. To learn how, let's peer further into the structure of our `w` object.
@@ -1356,43 +1699,53 @@ The results are quite analogous to those from `rethinking::compare()`. Again, th
 If you want to get those WAIC weights, you can use the `brms::model_weights()` function like so:
 
 ```{r}
-model_weights(b6.11, b6.12, b6.13, b6.14, 
-              weights = "waic") %>% 
+model_weights(b6.11, b6.12, b6.13, b6.14, weights = "waic") %>%
   round(digits = 2)
 ```
 
 That last `round()` line was just to limit the decimal-place precision. If you really wanted to go through the trouble, you could make yourself a little table like this.
 
 ```{r}
-model_weights(b6.11, b6.12, b6.13, b6.14, 
-              weights = "waic") %>%
+model_weights(b6.11, b6.12, b6.13, b6.14, weights = "waic") %>%
   t() %>%
-  data.frame() %>% 
+  data.frame() %>%
   gather(key = "model", value = "weight") %>%
-  arrange(desc(weight)) %>% 
-  mutate(weight = weight %>% round(digits = 2)) %>% 
+  arrange(desc(weight)) %>%
+  mutate(weight = weight %>% round(digits = 2)) %>%
   knitr::kable()
 ```
 
 With a little `[]` subsetting and light wrangling, we can convert the contents of our `w` object to a format suitable for plotting the WAIC estimates.
 
-```{r, fig.width = 4.5, fig.height = 1.25}
-w[, 7:8] %>% 
-  data.frame() %>% 
-  rownames_to_column(var = "model_name") %>% 
-  
-  ggplot(aes(x = model_name, y = waic, 
-             ymin = waic - se_waic, 
-             ymax = waic + se_waic)) +
-  geom_pointrange(color = carto_pal(7, "BurgYl")[7], 
-                  fill = carto_pal(7, "BurgYl")[5], shape = 21) +
-  labs(title = "My custom WAIC plot",
-       x = NULL, y = NULL) +
+```{r}
+#| fig-width: 4.5
+#| fig-height: 1.25
+
+w[, 7:8] %>%
+  data.frame() %>%
+  rownames_to_column(var = "model_name") %>%
+
+  ggplot(aes(
+    x = model_name,
+    y = waic,
+    ymin = waic - se_waic,
+    ymax = waic + se_waic
+  )) +
+  geom_pointrange(
+    color = carto_pal(7, "BurgYl")[7],
+    fill = carto_pal(7, "BurgYl")[5],
+    shape = 21
+  ) +
+  labs(title = "My custom WAIC plot", x = NULL, y = NULL) +
   coord_flip() +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        axis.ticks.y = element_blank(),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)))
+  theme(
+    text = element_text(family = "Courier"),
+    axis.ticks.y = element_blank(),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    )
+  )
 ```
 
 We briefly discussed the alternative information criteria, the LOO, above. Here’s how to use it in brms.
@@ -1423,9 +1776,11 @@ round(w[4, 2] * 2, 2)
 If it's easier to see, here's the same information in a tibble.
 
 ```{r}
-tibble(value             = c("difference", "se"),
-       elpd              = w[4, 1:2],
-       conversion_factor = c(-2, 2)) %>% 
+tibble(
+  value = c("difference", "se"),
+  elpd = w[4, 1:2],
+  conversion_factor = c(-2, 2)
+) %>%
   mutate(waic = elpd * conversion_factor)
 ```
 
@@ -1440,38 +1795,49 @@ n <- 1e5
 set.seed(6)
 
 # simulate
-diff <- tibble(diff = rnorm(n, 
-                            mean = w[4, 1] * -2, 
-                            sd   = w[4, 2] *  2))
+diff <- tibble(diff = rnorm(n, mean = w[4, 1] * -2, sd = w[4, 2] * 2))
 
-diff %>% 
+diff %>%
   summarise(the_probability_a_difference_is_negative = sum(diff < 0) / n)
 ```
 
 In case you're curious, this is a graphic version of what we just did.
 
-```{r, fig.width = 3, fig.height = 2.25}
-tibble(diff = seq(from = -20, to = 30, by = 0.25)) %>% 
+```{r}
+#| fig-width: 3
+#| fig-height: 2.25
+
+tibble(diff = seq(from = -20, to = 30, by = 0.25)) %>%
   ggplot(aes(x = diff, ymin = 0)) +
-  geom_ribbon(aes(ymax = dnorm(diff, w[4, 1] * -2, w[4, 2] * 2)),
-              fill = carto_pal(7, "BurgYl")[7]) +
-  geom_ribbon(data = tibble(diff = -20:0),
-              aes(ymax = dnorm(diff, w[4, 1] * -2, w[4, 2] * 2)),
-              fill = carto_pal(7, "BurgYl")[5]) + 
-  geom_vline(xintercept = 0, linetype = 3,
-             color = carto_pal(7, "BurgYl")[3]) +
+  geom_ribbon(
+    aes(ymax = dnorm(diff, w[4, 1] * -2, w[4, 2] * 2)),
+    fill = carto_pal(7, "BurgYl")[7]
+  ) +
+  geom_ribbon(
+    data = tibble(diff = -20:0),
+    aes(ymax = dnorm(diff, w[4, 1] * -2, w[4, 2] * 2)),
+    fill = carto_pal(7, "BurgYl")[5]
+  ) +
+  geom_vline(xintercept = 0, linetype = 3, color = carto_pal(7, "BurgYl")[3]) +
   scale_y_continuous(NULL, breaks = NULL) +
   xlab("WAIC difference distribution") +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)))
+  theme(
+    text = element_text(family = "Courier"),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    )
+  )
 ```
 
 #### Comparing estimates {#sec-Comparing-estimates}
 
 The brms package doesn't have anything like rethinking's `coeftab()` function. However, one can get that information with a little ingenuity. Here we'll employ the `summarise_draws()` function from the [posterior package](https://mc-stan.org/posterior) [@R-posterior], which will compute the summary statistics for our model parameters. For example, this is what it returns for the full model, `b6.14`.
 
-```{r, warning = F, message = F}
+```{r}
+#| warning: false
+#| message: false
+
 library(posterior)
 
 summarise_draws(b6.14)
@@ -1480,8 +1846,8 @@ summarise_draws(b6.14)
 You can compute a more focused summary like so.
 
 ```{r}
-summarise_draws(b6.14, mean, ~quantile2(.x, probs = c(0.025, 0.975))) %>%
-  filter(variable != "lprior") %>% 
+summarise_draws(b6.14, mean, ~ quantile2(.x, probs = c(0.025, 0.975))) %>%
+  filter(variable != "lprior") %>%
   filter(variable != "lp__")
 ```
 
@@ -1489,9 +1855,9 @@ To make it easier to iterate that workflow, we'll warp that into a custom functi
 
 ```{r}
 get_summary <- function(fit) {
-  fit %>% 
-    summarise_draws(mean, ~quantile2(.x, probs = c(0.025, 0.975))) %>%
-    filter(variable != "lprior") %>% 
+  fit %>%
+    summarise_draws(mean, ~ quantile2(.x, probs = c(0.025, 0.975))) %>%
+    filter(variable != "lprior") %>%
     filter(variable != "lp__")
 }
 
@@ -1502,10 +1868,10 @@ get_summary(b6.14)
 With a little `purrr::map()` code, you can save the `brm()` fits and their `get_summary()` summaries into a nested tibble, and then `unnest()` the tibble for `coeftab()`-like use.
 
 ```{r}
-my_coef_tab <- tibble(model = c("b6.11", "b6.12", "b6.13", "b6.14")) %>% 
-  mutate(fit = purrr::map(model, get)) %>% 
-  mutate(tidy = purrr::map(fit, get_summary)) %>% 
-  select(-fit) %>% 
+my_coef_tab <- tibble(model = c("b6.11", "b6.12", "b6.13", "b6.14")) %>%
+  mutate(fit = purrr::map(model, get)) %>%
+  mutate(tidy = purrr::map(fit, get_summary)) %>%
+  select(-fit) %>%
   unnest(tidy)
 
 my_coef_tab
@@ -1516,29 +1882,39 @@ Just a little more work and we'll have a table analogous to the one McElreath pr
 ```{r}
 my_coef_tab %>%
   # learn more about `tidyr::complete()` here: https://tidyr.tidyverse.org/reference/complete.html
-  complete(model, variable) %>% 
+  complete(model, variable) %>%
   select(model, variable, mean) %>%
   mutate(mean = round(mean, digits = 2)) %>%
-  spread(key = model, value = mean) %>% 
+  spread(key = model, value = mean) %>%
   knitr::kable()
 ```
 
 I'm also not aware of an efficient way in brms to reproduce Figure 6.12 for which McElreath nested his `coeftab()` argument in a `plot()` argument. However, if you’re willing to deviate just a bit from the format of McElreath's `coeftab()` plot, here's an elegant way to work with our `my_coef_tab` tibble.
 
-```{r, fig.height = 3.5, fig.width = 4}
-my_coef_tab %>% 
+```{r}
+#| fig-height: 3.5
+#| fig-width: 4
+
+my_coef_tab %>%
   ggplot(aes(x = mean, xmin = q2.5, xmax = q97.5, y = model)) +
-  geom_vline(xintercept = 0,  color = carto_pal(7, "BurgYl")[2]) +
-  geom_pointrange(shape = 21, color = carto_pal(7, "BurgYl")[7], fill = carto_pal(7, "BurgYl")[5]) +
-  labs(x = NULL,
-       y = NULL) +
+  geom_vline(xintercept = 0, color = carto_pal(7, "BurgYl")[2]) +
+  geom_pointrange(
+    shape = 21,
+    color = carto_pal(7, "BurgYl")[7],
+    fill = carto_pal(7, "BurgYl")[5]
+  ) +
+  labs(x = NULL, y = NULL) +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        axis.text.y = element_text(hjust = 0),
-        axis.ticks.y = element_blank(),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)),
-        panel.grid = element_blank(),
-        strip.background = element_rect(color = "transparent")) +
+  theme(
+    text = element_text(family = "Courier"),
+    axis.text.y = element_text(hjust = 0),
+    axis.ticks.y = element_blank(),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    ),
+    panel.grid = element_blank(),
+    strip.background = element_rect(color = "transparent")
+  ) +
   facet_wrap(~variable, ncol = 1)
 ```
 
@@ -1550,10 +1926,12 @@ Man, I agree. "The only problem with barplots is that they have bars" (p. 203). 
 
 Within the current brms framework, you can do model-averaged predictions with the `pp_average()` function. The default weighting scheme is with the LOO. Here we'll use the `weights = "waic"` argument to match McElreath's method in the text. Because `pp_average()` yields a matrix, we'll want to convert it to a tibble before feeding it into ggplot2.
 
-```{r, fig.width = 3.5, fig.height = 3}
+```{r}
+#| fig-width: 3.5
+#| fig-height: 3
+
 # we need new data for both the `fitted()` and `pp_average()` functions
-nd <- tibble(neocortex = seq(from = .5, to = .8, length.out = 30),
-             mass      = 4.5)
+nd <- tibble(neocortex = seq(from = .5, to = .8, length.out = 30), mass = 4.5)
 
 # we'll get the `b6.14`-implied trajectory with `fitted()`
 f <- fitted(b6.14, newdata = nd) %>%
@@ -1561,32 +1939,49 @@ f <- fitted(b6.14, newdata = nd) %>%
   bind_cols(nd)
 
 # the model-average trajectory comes from `pp_average()`
-pp_average(b6.11, b6.12, b6.13, b6.14,
-           weights = "waic",
-           method = "fitted",  # for new data predictions, use `method = "predict"`
-           newdata = nd) %>%
+pp_average(
+  b6.11,
+  b6.12,
+  b6.13,
+  b6.14,
+  weights = "waic",
+  method = "fitted", # for new data predictions, use `method = "predict"`
+  newdata = nd
+) %>%
   data.frame() %>%
   bind_cols(nd) %>%
-  
+
   # plot Figure 6.13
   ggplot(aes(x = neocortex, y = Estimate)) +
-  geom_ribbon(aes(ymin = Q2.5, ymax = Q97.5), 
-              fill = carto_pal(7, "BurgYl")[6], alpha = 1/4) +
+  geom_ribbon(
+    aes(ymin = Q2.5, ymax = Q97.5),
+    fill = carto_pal(7, "BurgYl")[6],
+    alpha = 1 / 4
+  ) +
   geom_line(color = carto_pal(7, "BurgYl")[6]) +
-  geom_ribbon(data = f, 
-              aes(ymin = Q2.5, ymax = Q97.5),
-              color = carto_pal(7, "BurgYl")[5], fill = "transparent", linetype = 2) +
-  geom_line(data = f,
-            color = carto_pal(7, "BurgYl")[5], linetype = 2) +
-  geom_point(data = d, 
-             aes(y = kcal.per.g), 
-             size = 2, color = carto_pal(7, "BurgYl")[7]) +
+  geom_ribbon(
+    data = f,
+    aes(ymin = Q2.5, ymax = Q97.5),
+    color = carto_pal(7, "BurgYl")[5],
+    fill = "transparent",
+    linetype = 2
+  ) +
+  geom_line(data = f, color = carto_pal(7, "BurgYl")[5], linetype = 2) +
+  geom_point(
+    data = d,
+    aes(y = kcal.per.g),
+    size = 2,
+    color = carto_pal(7, "BurgYl")[7]
+  ) +
   ylab("kcal.per.g") +
-  coord_cartesian(xlim = range(d$neocortex), 
-                  ylim = range(d$kcal.per.g)) +
+  coord_cartesian(xlim = range(d$neocortex), ylim = range(d$kcal.per.g)) +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)))
+  theme(
+    text = element_text(family = "Courier"),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    )
+  )
 ```
 
 ## ~~Summary~~ Bonus: $R^2$ talk {#sec-R2-talk}
@@ -1600,13 +1995,12 @@ bayes_R2(b6.14) %>% round(digits = 3)
 With just a little data processing, you can get a tibble table of each of models' $R^2$ 'Estimate'.
 
 ```{r}
-rbind(bayes_R2(b6.11), 
-      bayes_R2(b6.12), 
-      bayes_R2(b6.13), 
-      bayes_R2(b6.14)) %>%
+rbind(bayes_R2(b6.11), bayes_R2(b6.12), bayes_R2(b6.13), bayes_R2(b6.14)) %>%
   data.frame() %>%
-  mutate(model                   = c("b6.11", "b6.12", "b6.13", "b6.14"),
-         r_square_posterior_mean = round(Estimate, digits = 2)) %>%
+  mutate(
+    model = c("b6.11", "b6.12", "b6.13", "b6.14"),
+    r_square_posterior_mean = round(Estimate, digits = 2)
+  ) %>%
   select(model, r_square_posterior_mean)
 ```
 
@@ -1621,7 +2015,10 @@ r2_b6.13 %>%
 
 If you want to use these in ggplot2, you'll need to put them in tibbles or data frames. Here we do so for two of our model fits.
 
-```{r, fig.width = 3.5, fig.height = 3}
+```{r}
+#| fig-width: 3.5
+#| fig-height: 3
+
 # model `b6.13`
 r2_b6.13 <- bayes_R2(b6.13, summary = F) %>%
   data.frame() %>%
@@ -1639,44 +2036,67 @@ r2_combined <- bind_cols(r2_b6.13, r2_b6.14) %>%
 # plot their densities
 r2_combined %>%
   ggplot() +
-  geom_density(aes(x = r2_13),
-               fill = carto_pal(7, "BurgYl")[4], alpha = 3/4, linewidth = 0) +
-  geom_density(aes(x = r2_14),
-               fill = carto_pal(7, "BurgYl")[6], alpha = 3/4, linewidth = 0) +
+  geom_density(
+    aes(x = r2_13),
+    fill = carto_pal(7, "BurgYl")[4],
+    alpha = 3 / 4,
+    linewidth = 0
+  ) +
+  geom_density(
+    aes(x = r2_14),
+    fill = carto_pal(7, "BurgYl")[6],
+    alpha = 3 / 4,
+    linewidth = 0
+  ) +
   scale_y_continuous(NULL, breaks = NULL) +
   coord_cartesian(xlim = 0:1) +
-  labs(title = expression(italic(R)^2~distributions),
-       subtitle = "Going from left to right, these are\nfor models b6.13 and b6.14.",
-       x = NULL) +
+  labs(
+    title = expression(italic(R)^2 ~ distributions),
+    subtitle = "Going from left to right, these are\nfor models b6.13 and b6.14.",
+    x = NULL
+  ) +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)))
+  theme(
+    text = element_text(family = "Courier"),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    )
+  )
 ```
 
 If you do your work in a field where folks use $R^2$ change, you might do that with a simple difference score, which we computed above with `mutate(dif = R2.14 - R2.13)`. Here's the $\Delta R^2$ (i.e., `dif`) plot.
 
-```{r, fig.width = 3.5, fig.height = 2.75}
+```{r}
+#| fig-width: 3.5
+#| fig-height: 2.75
+
 r2_combined %>%
   ggplot(aes(x = dif, y = 0)) +
-  stat_halfeye(point_interval = median_qi, .width = .95,
-               fill  = carto_pal(7, "BurgYl")[5], 
-               color = carto_pal(7, "BurgYl")[7]) +
+  stat_halfeye(
+    point_interval = median_qi,
+    .width = .95,
+    fill = carto_pal(7, "BurgYl")[5],
+    color = carto_pal(7, "BurgYl")[7]
+  ) +
   scale_y_continuous(NULL, breaks = NULL) +
-  xlab(expression(Delta*italic(R)^2)) +
+  xlab(expression(Delta * italic(R)^2)) +
   theme_classic() +
-  theme(text = element_text(family = "Courier"),
-        panel.background = element_rect(fill = alpha(carto_pal(7, "BurgYl")[3], 1/4)))
+  theme(
+    text = element_text(family = "Courier"),
+    panel.background = element_rect(
+      fill = alpha(carto_pal(7, "BurgYl")[3], 1 / 4)
+    )
+  )
 ```
 
 If you multiply those values by 100, they make a distribution for the greater percentage in `kcal.per.g` variance `b6.14` explained compared to `b6.13`.
 
 The brms package did not get these $R^2$ values by traditional method used in, say, ordinary least squares estimation. To learn more about how the Bayesian $R^2$ sausage is made, check out the paper by @gelmanRsquaredBayesianRegression2019, [*R-squared for Bayesian regression models*](https://doi.org/10.1080/00031305.2018.1549100).
 
-## Session info {-}
+## Session info {.unnumbered}
 
 ```{r}
 sessionInfo()
 ```
 
-## Comments {-}
-
+## Comments {.unnumbered}
