@@ -1,8 +1,9 @@
-name: uvr test
+name: publish
 
 on:
   push:
-    branches: [ci-uvr-test]
+    branches: [master, ci-uvr-test]
+  workflow_dispatch:
 
 jobs:
   render:
@@ -10,7 +11,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        chapter: ["05", "06", "07", "09", "10", "12", "15"]
+        chapter: ["index", "01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12", "13", "14", "15"]
     steps:
       - uses: actions/checkout@v6
       - uses: r-lib/actions/setup-r@v2
@@ -43,3 +44,27 @@ jobs:
           name: freeze-${{ matrix.chapter }}
           path: _freeze/${{ matrix.chapter }}
           if-no-files-found: error
+
+  publish:
+    needs: render
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: quarto-dev/quarto-actions/setup@v2
+        with:
+          version: 1.11.9
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: freeze-*
+          path: _freeze
+      - name: Put frozen output in place
+        run: |
+          for dir in _freeze/freeze-*; do
+            mv "$dir" "_freeze/${dir#_freeze/freeze-}"
+          done
+          ls _freeze
+      - uses: quarto-dev/quarto-actions/publish@v2
+        with:
+          target: gh-pages
