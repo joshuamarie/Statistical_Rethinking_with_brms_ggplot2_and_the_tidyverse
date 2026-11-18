@@ -6,30 +6,28 @@ on:
   workflow_dispatch:
 
 jobs:
+  # Reads the chapter list from _quarto.yml, so new chapters are picked up automatically.
   chapters:
     runs-on: ubuntu-latest
     outputs:
-      matrix: ${{ steps.list.outputs.matrix }}
+      list: ${{ steps.read.outputs.list }}
     steps:
       - uses: actions/checkout@v6
-      - name: List chapters that contain R code
-        id: list
+      - name: Read the chapter list from _quarto.yml
+        id: read
         run: |
-          matrix=$(yq -r '.book.chapters[] | select(tag == "!!str")' _quarto.yml | tr -d '\r' | while read -r file; do
-            if grep -q '^```{r' "$file"; then
-              echo "${file%.qmd}"
-            fi
-          done | jq -R . | jq -sc .)
-          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
-          echo "$matrix"
+          list=$(yq -o=json -I=0 '[.book.chapters[] | select(tag == "!!str") | sub("\.qmd$"; "")]' _quarto.yml)
+          echo "list=$list" >> "$GITHUB_OUTPUT"
+          echo "$list"
 
+  # One job per chapter, all in parallel. Each one runs the R code and keeps the computed output.
   render:
     needs: chapters
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        chapter: ${{ fromJSON(needs.chapters.outputs.matrix) }}
+        chapter: ${{ fromJSON(needs.chapters.outputs.list) }}
     steps:
       - uses: actions/checkout@v6
       - uses: r-lib/actions/setup-r@v2
@@ -39,14 +37,11 @@ jobs:
         with:
           version: 1.11.9
       - name: Install uvr
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          for attempt in 1 2 3; do
-            curl -fsSL https://raw.githubusercontent.com/nbafrank/uvr/main/install.sh | UVR_INSTALL_DIR="$HOME/.local/bin" sh && break
-            echo "uvr install failed, retrying in 30 seconds"
-            sleep 30
-          done
+          curl -fsSL https://raw.githubusercontent.com/nbafrank/uvr/main/install.sh | UVR_INSTALL_DIR="$HOME/.local/bin" sh
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-          "$HOME/.local/bin/uvr" --version
       - name: Install packages
         run: |
           uvr init --here
@@ -61,8 +56,9 @@ jobs:
         with:
           name: freeze-${{ matrix.chapter }}
           path: _freeze/${{ matrix.chapter }}
-          if-no-files-found: error
+          if-no-files-found: ignore
 
+  # Collects every chapter's output and publishes the book. No R code runs here.
   publish:
     needs: render
     if: github.ref == 'refs/heads/master'
