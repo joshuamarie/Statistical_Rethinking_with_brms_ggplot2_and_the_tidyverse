@@ -1,5 +1,5 @@
 flavor = "quarto"
-extend-exclude = ["old bookdown files/"]
+extend-exclude = ["old bookdown files/", "in_the_works/"]
 
 [format]
 wrap = "preserve"
