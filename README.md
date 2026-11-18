@@ -8,4 +8,3 @@ So, this project is an attempt to reexpress the code in McElreath's textbook. Hi
 
 This repository contains the files for the 1.4.0 version of [*Statistical rethinking* with brms, ggplot2, and the tidyverse](https://solomon.quarto.pub/sr/)
 project.
-
